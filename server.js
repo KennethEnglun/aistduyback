@@ -14,8 +14,11 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // DeepSeek AI 配置
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-c47eb9db749e4d0da072557681f52e83';
+let DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-c47eb9db749e4d0da072557681f52e83';
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+
+// 清理API Key - 移除可能的無效字符
+DEEPSEEK_API_KEY = DEEPSEEK_API_KEY.trim().replace(/[\r\n\t]/g, '');
 
 // 檢查API密鑰配置
 console.log('🔑 DeepSeek API配置檢查:');
@@ -23,13 +26,19 @@ console.log('📊 環境變量檢查:');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- PORT:', process.env.PORT);
 console.log('- API Key存在:', !!process.env.DEEPSEEK_API_KEY);
+console.log('- 原始API Key長度:', process.env.DEEPSEEK_API_KEY ? process.env.DEEPSEEK_API_KEY.length : 0);
 
 if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY === 'undefined') {
     console.error('❌ DeepSeek API Key 未設置或無效');
     console.error('🔍 當前環境變量中的API Key:', process.env.DEEPSEEK_API_KEY ? 'EXISTS' : 'NOT_FOUND');
 } else {
     console.log('✅ DeepSeek API Key 已設置:', `${DEEPSEEK_API_KEY.substring(0, 10)}...`);
-    console.log('🔍 Key長度:', DEEPSEEK_API_KEY.length);
+    console.log('🔍 清理後Key長度:', DEEPSEEK_API_KEY.length);
+    console.log('🔍 Key格式檢查:', DEEPSEEK_API_KEY.startsWith('sk-') ? '✅ 正確格式' : '❌ 格式錯誤');
+    
+    // 檢查是否有特殊字符
+    const hasSpecialChars = /[^\w-]/.test(DEEPSEEK_API_KEY.replace('sk-', ''));
+    console.log('🔍 特殊字符檢查:', hasSpecialChars ? '❌ 含有特殊字符' : '✅ 無特殊字符');
 }
 console.log('🔗 API URL:', DEEPSEEK_API_URL);
 
@@ -226,9 +235,15 @@ ${studyContent}
             temperature: 0.7
         };
 
+        // 清理API Key並安全構建Authorization頭部
+        const cleanKey = DEEPSEEK_API_KEY.replace(/[^\w-]/g, '');
+        const finalKey = cleanKey !== DEEPSEEK_API_KEY ? cleanKey : DEEPSEEK_API_KEY;
+        const authHeader = `Bearer ${finalKey}`.trim();
+        console.log('🔍 使用Authorization頭部長度:', authHeader.length);
+
         const requestConfig = {
             headers: {
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+                'Authorization': authHeader,
                 'Content-Type': 'application/json',
                 'User-Agent': 'LPMS-Quiz-Platform/1.0'
             },
@@ -382,6 +397,8 @@ app.get('/health', (req, res) => {
         environment: process.env.NODE_ENV || 'development',
         apiKeyConfigured: !!DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'undefined',
         apiKeyLength: DEEPSEEK_API_KEY ? DEEPSEEK_API_KEY.length : 0,
+        originalApiKeyLength: process.env.DEEPSEEK_API_KEY ? process.env.DEEPSEEK_API_KEY.length : 0,
+        apiKeyStartsWithSk: DEEPSEEK_API_KEY ? DEEPSEEK_API_KEY.startsWith('sk-') : false,
         apiUrl: DEEPSEEK_API_URL
     });
 });
@@ -422,11 +439,28 @@ app.get('/api/test-deepseek', async (req, res) => {
 
         console.log('📤 發送測試請求到DeepSeek...');
         console.log('🔑 使用API Key:', `${DEEPSEEK_API_KEY.substring(0, 10)}...`);
+        console.log('🔍 API Key長度:', DEEPSEEK_API_KEY.length);
+        console.log('🔍 API Key格式:', DEEPSEEK_API_KEY.startsWith('sk-') ? '正確' : '錯誤');
+        
+        // 檢查API Key是否有問題字符
+        const cleanKey = DEEPSEEK_API_KEY.replace(/[^\w-]/g, '');
+        const hasInvalidChars = cleanKey !== DEEPSEEK_API_KEY;
+        console.log('🔍 API Key有無效字符:', hasInvalidChars);
+        if (hasInvalidChars) {
+            console.log('🔧 原始Key前20字符:', JSON.stringify(DEEPSEEK_API_KEY.substring(0, 20)));
+            console.log('🔧 清理後Key前20字符:', JSON.stringify(cleanKey.substring(0, 20)));
+        }
+        
+        // 使用清理後的Key構建Authorization頭部
+        const finalKey = hasInvalidChars ? cleanKey : DEEPSEEK_API_KEY;
+        const authHeader = `Bearer ${finalKey}`.trim();
+        console.log('🔍 Authorization頭部長度:', authHeader.length);
         
         const response = await axios.post(DEEPSEEK_API_URL, testPayload, {
             headers: {
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-                'Content-Type': 'application/json'
+                'Authorization': authHeader,
+                'Content-Type': 'application/json',
+                'User-Agent': 'LPMS/1.0'
             },
             timeout: 30000
         });
