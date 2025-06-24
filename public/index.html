@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LPMS - LPedia AI温習問答系統</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">
+                <i class="fas fa-brain"></i>
+                LPMS - LPedia AI温習問答系統
+            </h1>
+            <nav class="nav">
+                <button class="nav-btn" onclick="showSection('home')">首頁</button>
+                <button class="nav-btn" onclick="showSection('leaderboard')">排行榜</button>
+                <button class="nav-btn" onclick="showSection('stats')">統計</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- 首頁部分 -->
+        <section id="home" class="section active">
+            <div class="container">
+                <div class="welcome-card">
+                    <h2>歡迎來到LPMS AI學習平台</h2>
+                    <p>選擇您的年級和科目，開始您的AI學習之旅！</p>
+                </div>
+
+                <!-- 年級選擇 -->
+                <div class="step-card" id="grade-selection">
+                    <h3><i class="fas fa-graduation-cap"></i> 第一步：選擇年級</h3>
+                    <div class="grade-grid">
+                        <button class="grade-btn" data-grade="一年級">一年級</button>
+                        <button class="grade-btn" data-grade="二年級">二年級</button>
+                        <button class="grade-btn" data-grade="三年級">三年級</button>
+                        <button class="grade-btn" data-grade="四年級">四年級</button>
+                        <button class="grade-btn" data-grade="五年級">五年級</button>
+                        <button class="grade-btn" data-grade="六年級">六年級</button>
+                    </div>
+                </div>
+
+                <!-- 科目選擇 -->
+                <div class="step-card" id="subject-selection" style="display: none;">
+                    <h3><i class="fas fa-book"></i> 第二步：選擇科目</h3>
+                    <div class="subject-grid">
+                        <button class="subject-btn" data-subject="中文">
+                            <i class="fas fa-language"></i>
+                            中文
+                        </button>
+                        <button class="subject-btn" data-subject="英文">
+                            <i class="fas fa-globe"></i>
+                            英文
+                        </button>
+                        <button class="subject-btn" data-subject="數學">
+                            <i class="fas fa-calculator"></i>
+                            數學
+                        </button>
+                        <button class="subject-btn" data-subject="科學">
+                            <i class="fas fa-flask"></i>
+                            科學
+                        </button>
+                        <button class="subject-btn" data-subject="人文">
+                            <i class="fas fa-landmark"></i>
+                            人文
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 主題輸入 -->
+                <div class="step-card" id="topic-input" style="display: none;">
+                    <h3><i class="fas fa-lightbulb"></i> 第三步：選擇學習模式</h3>
+                    
+                    <!-- 學習模式選擇 -->
+                    <div class="mode-selection">
+                        <button class="mode-btn active" id="simple-mode-btn" onclick="selectMode('simple')">
+                            <i class="fas fa-rocket"></i>
+                            快速模式
+                            <small>輸入主題，快速開始</small>
+                        </button>
+                        <button class="mode-btn" id="advanced-mode-btn" onclick="selectMode('advanced')">
+                            <i class="fas fa-cogs"></i>
+                            進階模式
+                            <small>詳細輸入學習內容</small>
+                        </button>
+                    </div>
+
+                    <!-- 快速模式 -->
+                    <div class="topic-form" id="simple-mode">
+                        <label for="topic">學習主題：</label>
+                        <input type="text" id="topic" placeholder="請輸入您想學習的主題，例如：加法、詩詞、動物等" maxlength="50">
+                        <button class="start-btn" onclick="startQuiz()">
+                            <i class="fas fa-play"></i>
+                            開始測驗
+                        </button>
+                    </div>
+
+                    <!-- 進階模式 -->
+                    <div class="topic-form" id="advanced-mode" style="display: none;">
+                        <label for="topic-advanced">學習主題：</label>
+                        <input type="text" id="topic-advanced" placeholder="請輸入學習主題" maxlength="50">
+                        
+                        <div class="study-content-section">
+                            <label for="study-content">詳細學習內容：</label>
+                            <div class="content-input-area">
+                                <textarea id="study-content" rows="6" placeholder="請詳細輸入您要溫習的內容，AI會根據這些內容出題考核...
+
+例如：
+• 中國的首都是北京
+• 香港有18個區
+• 長江是中國最長的河流
+• 中秋節在農曆八月十五日
+
+內容越詳細，出題會越精準！" maxlength="2000"></textarea>
+                                <div class="input-tools">
+                                    <button type="button" class="history-btn" id="show-history-btn" onclick="toggleHistoryPanel()">
+                                        <i class="fas fa-history"></i> 歷史輸入
+                                    </button>
+                                    <small class="char-counter">字數：<span id="char-count">0</span> / 2000</small>
+                                </div>
+                            </div>
+                            
+                            <!-- 歷史內容選擇器 -->
+                            <div id="history-panel" class="history-panel" style="display: none;">
+                                <div class="history-header">
+                                    <h4><i class="fas fa-history"></i> 最近的學習內容</h4>
+                                    <button type="button" class="close-history-btn" onclick="toggleHistoryPanel()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="history-list" id="history-list">
+                                    <div class="loading-message">正在載入歷史記錄...</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="start-btn" onclick="startQuiz()">
+                            <i class="fas fa-play"></i>
+                            開始進階測驗
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 選擇總結 -->
+                <div class="selection-summary" id="selection-summary" style="display: none;">
+                    <h4>您的選擇：</h4>
+                    <div class="summary-details">
+                        <span class="summary-item">年級：<span id="selected-grade"></span></span>
+                        <span class="summary-item">科目：<span id="selected-subject"></span></span>
+                        <span class="summary-item">主題：<span id="selected-topic"></span></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 測驗部分 -->
+        <section id="quiz" class="section">
+            <div class="container">
+                <div class="quiz-header">
+                    <div class="quiz-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <span class="progress-text" id="progress-text">1 / 10</span>
+                    </div>
+                    <div class="quiz-info">
+                        <span id="quiz-grade"></span> - <span id="quiz-subject"></span> - <span id="quiz-topic"></span>
+                    </div>
+                </div>
+
+                <div class="quiz-content">
+                    <div class="question-card">
+                        <h3 class="question-text" id="question-text">載入中...</h3>
+                        <div class="options-grid" id="options-grid">
+                            <!-- 選項將動態添加 -->
+                        </div>
+                        <div class="quiz-controls">
+                            <button class="control-btn" id="prev-btn" onclick="previousQuestion()" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                                上一題
+                            </button>
+                            <button class="control-btn confirm" id="confirm-btn" onclick="confirmAnswer()" disabled>
+                                <i class="fas fa-check"></i>
+                                確認答案
+                            </button>
+                            <button class="control-btn primary" id="next-btn" onclick="nextQuestion()" disabled style="display: none;">
+                                下一題
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 答案解析 -->
+                        <div class="answer-explanation" id="answer-explanation" style="display: none;">
+                            <div class="explanation-content">
+                                <div class="result-indicator" id="result-indicator">
+                                    <!-- 對錯指示器 -->
+                                </div>
+                                <div class="correct-answer" id="correct-answer-display">
+                                    <!-- 正確答案顯示 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 結果部分 -->
+        <section id="results" class="section">
+            <div class="container">
+                <div class="results-card">
+                    <h2><i class="fas fa-trophy"></i> 測驗結果</h2>
+                    <div class="score-display">
+                        <div class="score-circle">
+                            <span class="score-number" id="final-score">0</span>
+                            <span class="score-total">/ 10</span>
+                        </div>
+                        <div class="score-percentage" id="score-percentage">0%</div>
+                    </div>
+                    <div class="results-details">
+                        <div class="result-item">
+                            <span class="result-label">年級：</span>
+                            <span id="result-grade"></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">科目：</span>
+                            <span id="result-subject"></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">主題：</span>
+                            <span id="result-topic"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- 名字輸入 -->
+                    <div class="name-input-section">
+                        <h4><i class="fas fa-user"></i> 留下您的名字</h4>
+                        <p>在排行榜上顯示您的佳績！</p>
+                        <div class="name-input-form">
+                            <input type="text" id="user-name" placeholder="請輸入您的名字（可選）" maxlength="20">
+                            <button class="save-score-btn" onclick="saveScoreWithName()">
+                                <i class="fas fa-save"></i>
+                                保存成績
+                            </button>
+                        </div>
+                        <div id="save-status" class="save-status"></div>
+                    </div>
+                    
+                    <div class="results-actions">
+                        <button class="action-btn" onclick="restartQuiz()">
+                            <i class="fas fa-redo"></i>
+                            重新開始
+                        </button>
+                        <button class="action-btn secondary" onclick="showSection('leaderboard')">
+                            <i class="fas fa-list"></i>
+                            查看排行榜
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 排行榜部分 -->
+        <section id="leaderboard" class="section">
+            <div class="container">
+                <div class="leaderboard-card">
+                    <h2><i class="fas fa-trophy"></i> 排行榜</h2>
+                    
+                    <!-- 篩選器 -->
+                    <div class="leaderboard-filters">
+                        <div class="filter-group">
+                            <label for="grade-filter">年級篩選：</label>
+                            <select id="grade-filter" onchange="filterLeaderboard()">
+                                <option value="">全部年級</option>
+                                <option value="一年級">一年級</option>
+                                <option value="二年級">二年級</option>
+                                <option value="三年級">三年級</option>
+                                <option value="四年級">四年級</option>
+                                <option value="五年級">五年級</option>
+                                <option value="六年級">六年級</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="subject-filter">科目篩選：</label>
+                            <select id="subject-filter" onchange="filterLeaderboard()">
+                                <option value="">全部科目</option>
+                                <option value="中文">中文</option>
+                                <option value="英文">英文</option>
+                                <option value="數學">數學</option>
+                                <option value="科學">科學</option>
+                                <option value="人文">人文</option>
+                            </select>
+                        </div>
+                        
+                        <button class="clear-filter-btn" onclick="clearFilters()">
+                            <i class="fas fa-times"></i>
+                            清除篩選
+                        </button>
+                    </div>
+                    
+                    <div class="leaderboard-table" id="leaderboard-table">
+                        <!-- 排行榜數據將動態添加 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 統計部分 -->
+        <section id="stats" class="section">
+            <div class="container">
+                <div class="stats-card">
+                    <h2><i class="fas fa-chart-bar"></i> 統計資料</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number" id="total-attempts">0</div>
+                            <div class="stat-label">總測驗次數</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="average-score">0%</div>
+                            <div class="stat-label">平均分數</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 載入遮罩 -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>AI正在生成問題...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
