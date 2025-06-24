@@ -14,7 +14,7 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // DeepSeek AI 配置
-const DEEPSEEK_API_KEY = 'sk-c47eb9db749e4d0da072557681f52e83';
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-c47eb9db749e4d0da072557681f52e83';
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
 // 初始化數據庫

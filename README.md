@@ -29,12 +29,20 @@
 
 ## 安裝和運行
 
-### 1. 安裝依賴
+### 本地開發
+
+#### 1. 克隆倉庫
+```bash
+git clone https://github.com/KennethEnglun/aistduyback.git
+cd aistduyback
+```
+
+#### 2. 安裝依賴
 ```bash
 npm install
 ```
 
-### 2. 啟動服務器
+#### 3. 啟動服務器
 ```bash
 # 開發模式（需要先安裝 nodemon）
 npm run dev
@@ -43,8 +51,31 @@ npm run dev
 npm start
 ```
 
-### 3. 訪問應用
+#### 4. 訪問應用
 打開瀏覽器，訪問 `http://localhost:3000`
+
+### 🚀 部署到Render
+
+#### 快速部署
+1. 在 [Render](https://render.com) 創建帳戶
+2. 點擊 "New +" → "Web Service"
+3. 連接 GitHub 倉庫：`https://github.com/KennethEnglun/aistduyback.git`
+4. 配置設置：
+   - **Name**: `lpms-ai-quiz-platform`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+5. 設置環境變量：
+   - `NODE_ENV`: `production`
+   - `DEEPSEEK_API_KEY`: `你的API密鑰`
+6. 點擊 "Create Web Service"
+
+#### 詳細部署指南
+請參閱 [DEPLOY.md](./DEPLOY.md) 獲取完整的部署說明。
+
+#### 在線演示
+- **部署地址**：`https://your-app-name.onrender.com`
+- **GitHub倉庫**：https://github.com/KennethEnglun/aistduyback.git
 
 ## 使用說明
 
