@@ -19,10 +19,17 @@ const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
 
 // 檢查API密鑰配置
 console.log('🔑 DeepSeek API配置檢查:');
+console.log('📊 環境變量檢查:');
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- PORT:', process.env.PORT);
+console.log('- API Key存在:', !!process.env.DEEPSEEK_API_KEY);
+
 if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY === 'undefined') {
     console.error('❌ DeepSeek API Key 未設置或無效');
+    console.error('🔍 當前環境變量中的API Key:', process.env.DEEPSEEK_API_KEY ? 'EXISTS' : 'NOT_FOUND');
 } else {
     console.log('✅ DeepSeek API Key 已設置:', `${DEEPSEEK_API_KEY.substring(0, 10)}...`);
+    console.log('🔍 Key長度:', DEEPSEEK_API_KEY.length);
 }
 console.log('🔗 API URL:', DEEPSEEK_API_URL);
 
@@ -220,7 +227,7 @@ ${studyContent}
                 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
                 'Content-Type': 'application/json'
             },
-            timeout: 30000 // 30秒超時
+            timeout: 60000 // 60秒超時（Railway需要更長時間）
         });
 
         console.log('✅ API調用成功，狀態碼:', response.status);
@@ -356,6 +363,34 @@ app.get('/api/stats', (req, res) => {
             averageScore: Math.round(row.avg_score || 0),
             totalAttempts: row.total_attempts || 0
         });
+    });
+});
+
+// 健康檢查端點
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        apiKeyConfigured: !!DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'undefined',
+        apiKeyLength: DEEPSEEK_API_KEY ? DEEPSEEK_API_KEY.length : 0,
+        apiUrl: DEEPSEEK_API_URL
+    });
+});
+
+// API狀態檢查端點
+app.get('/api/status', (req, res) => {
+    res.json({
+        message: 'LPMS AI Quiz Platform API 正常運行',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        endpoints: [
+            '/api/generate-questions',
+            '/api/save-score', 
+            '/api/leaderboard',
+            '/api/stats',
+            '/api/study-history'
+        ]
     });
 });
 
