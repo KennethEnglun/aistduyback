@@ -210,9 +210,11 @@ ${studyContent}
         }
 
         console.log('🚀 開始調用DeepSeek API...');
-        console.log('📝 API Key前10位:', DEEPSEEK_API_KEY.substring(0, 10));
+        console.log('📝 年級:', grade, '科目:', subject, '主題:', topic);
+        console.log('🔑 API Key前10位:', DEEPSEEK_API_KEY.substring(0, 10));
+        console.log('📏 提示內容長度:', prompt.length, '字符');
         
-        const response = await axios.post(DEEPSEEK_API_URL, {
+        const requestPayload = {
             model: "deepseek-chat",
             messages: [
                 {
@@ -222,13 +224,19 @@ ${studyContent}
             ],
             max_tokens: 4000,
             temperature: 0.7
-        }, {
+        };
+
+        const requestConfig = {
             headers: {
                 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'User-Agent': 'LPMS-Quiz-Platform/1.0'
             },
             timeout: 60000 // 60秒超時（Railway需要更長時間）
-        });
+        };
+
+        console.log('📤 發送請求到:', DEEPSEEK_API_URL);
+        const response = await axios.post(DEEPSEEK_API_URL, requestPayload, requestConfig);
 
         console.log('✅ API調用成功，狀態碼:', response.status);
         
@@ -389,9 +397,85 @@ app.get('/api/status', (req, res) => {
             '/api/save-score', 
             '/api/leaderboard',
             '/api/stats',
-            '/api/study-history'
+            '/api/study-history',
+            '/api/test-deepseek'
         ]
     });
+});
+
+// DeepSeek API測試端點
+app.get('/api/test-deepseek', async (req, res) => {
+    try {
+        console.log('🧪 開始測試DeepSeek API...');
+        
+        const testPayload = {
+            model: "deepseek-chat",
+            messages: [
+                {
+                    role: "user",
+                    content: "請回答：1+1等於多少？請用JSON格式回答：{\"answer\": \"2\"}"
+                }
+            ],
+            max_tokens: 100,
+            temperature: 0.1
+        };
+
+        console.log('📤 發送測試請求到DeepSeek...');
+        console.log('🔑 使用API Key:', `${DEEPSEEK_API_KEY.substring(0, 10)}...`);
+        
+        const response = await axios.post(DEEPSEEK_API_URL, testPayload, {
+            headers: {
+                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            timeout: 30000
+        });
+
+        console.log('✅ DeepSeek API測試成功');
+        console.log('📥 回應狀態:', response.status);
+        console.log('📄 回應內容:', response.data.choices[0].message.content);
+
+        res.json({
+            success: true,
+            message: 'DeepSeek API測試成功',
+            response: {
+                status: response.status,
+                content: response.data.choices[0].message.content,
+                usage: response.data.usage
+            },
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ DeepSeek API測試失敗:', error.message);
+        
+        let errorDetails = {
+            message: error.message,
+            timestamp: new Date().toISOString()
+        };
+
+        if (error.response) {
+            console.error('🔍 API響應錯誤:', error.response.status, error.response.statusText);
+            console.error('📋 錯誤詳情:', error.response.data);
+            errorDetails.apiError = {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data
+            };
+        } else if (error.request) {
+            console.error('🔍 網路請求錯誤');
+            errorDetails.networkError = true;
+        } else if (error.code === 'ECONNABORTED') {
+            console.error('🔍 請求超時');
+            errorDetails.timeout = true;
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'DeepSeek API測試失敗',
+            error: errorDetails
+        });
+    }
 });
 
 // 提供主頁面
