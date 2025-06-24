@@ -15,7 +15,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // DeepSeek AI 配置
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-c47eb9db749e4d0da072557681f52e83';
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+
+// 檢查API密鑰配置
+console.log('🔑 DeepSeek API配置檢查:');
+if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY === 'undefined') {
+    console.error('❌ DeepSeek API Key 未設置或無效');
+} else {
+    console.log('✅ DeepSeek API Key 已設置:', `${DEEPSEEK_API_KEY.substring(0, 10)}...`);
+}
+console.log('🔗 API URL:', DEEPSEEK_API_URL);
 
 // 初始化數據庫
 const db = new sqlite3.Database('./quiz_database.db');
@@ -193,6 +202,9 @@ ${studyContent}
 請確保回答是有效的JSON格式。`;
         }
 
+        console.log('🚀 開始調用DeepSeek API...');
+        console.log('📝 API Key前10位:', DEEPSEEK_API_KEY.substring(0, 10));
+        
         const response = await axios.post(DEEPSEEK_API_URL, {
             model: "deepseek-chat",
             messages: [
@@ -207,9 +219,12 @@ ${studyContent}
             headers: {
                 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            timeout: 30000 // 30秒超時
         });
 
+        console.log('✅ API調用成功，狀態碼:', response.status);
+        
         let content = response.data.choices[0].message.content;
         
         // 清理回應內容，移除可能的markdown格式
@@ -218,16 +233,41 @@ ${studyContent}
         let questions;
         try {
             questions = JSON.parse(content);
+            console.log('✅ JSON解析成功，生成了', questions.questions?.length || 0, '道題目');
         } catch (parseError) {
-            console.error('JSON解析錯誤:', parseError);
-            console.error('原始內容:', content);
+            console.error('❌ JSON解析錯誤:', parseError);
+            console.error('🔍 原始內容:', content);
             return res.status(500).json({ error: 'AI回應格式錯誤，請重試' });
         }
 
         res.json(questions);
     } catch (error) {
-        console.error('生成問題錯誤:', error);
-        res.status(500).json({ error: '生成問題失敗，請重試' });
+        console.error('❌ 生成問題錯誤:', error.message);
+        
+        // 詳細錯誤診斷
+        if (error.response) {
+            console.error('🔍 API響應錯誤:', {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data
+            });
+            
+            if (error.response.status === 401) {
+                return res.status(500).json({ error: 'API密鑰無效或已過期' });
+            } else if (error.response.status === 429) {
+                return res.status(500).json({ error: 'API調用頻率過高，請稍後重試' });
+            } else if (error.response.status === 403) {
+                return res.status(500).json({ error: 'API權限不足' });
+            }
+        } else if (error.request) {
+            console.error('🔍 網路請求錯誤:', error.message);
+            return res.status(500).json({ error: '網路連接失敗，請檢查網路連接' });
+        } else if (error.code === 'ECONNABORTED') {
+            console.error('🔍 請求超時錯誤');
+            return res.status(500).json({ error: 'API調用超時，請重試' });
+        }
+        
+        res.status(500).json({ error: '生成問題失敗：' + error.message });
     }
 });
 

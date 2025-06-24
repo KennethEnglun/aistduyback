@@ -54,27 +54,26 @@ npm start
 #### 4. 訪問應用
 打開瀏覽器，訪問 `http://localhost:3000`
 
-### 🚀 部署到Render
+### 🚀 部署到Railway
 
 #### 快速部署
-1. 在 [Render](https://render.com) 創建帳戶
-2. 點擊 "New +" → "Web Service"
-3. 連接 GitHub 倉庫：`https://github.com/KennethEnglun/aistduyback.git`
-4. 配置設置：
-   - **Name**: `lpms-ai-quiz-platform`
-   - **Environment**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-5. 設置環境變量：
+1. 在 [Railway](https://railway.app) 創建帳戶
+2. 點擊 "New Project" → "Deploy from GitHub repo"
+3. 選擇 GitHub 倉庫：`https://github.com/KennethEnglun/aistduyback.git`
+4. Railway會自動檢測Node.js項目並開始部署
+5. 在項目設置中添加環境變量：
    - `NODE_ENV`: `production`
    - `DEEPSEEK_API_KEY`: `你的API密鑰`
-6. 點擊 "Create Web Service"
+6. 部署完成後獲得Railway URL
+
+#### 一鍵部署按鈕
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/KennethEnglun/aistduyback.git)
 
 #### 詳細部署指南
-請參閱 [DEPLOY.md](./DEPLOY.md) 獲取完整的部署說明。
+請參閱 [RAILWAY_DEPLOY.md](./RAILWAY_DEPLOY.md) 獲取完整的部署說明。
 
 #### 在線演示
-- **部署地址**：`https://your-app-name.onrender.com`
+- **部署地址**：`https://your-project-name.railway.app`
 - **GitHub倉庫**：https://github.com/KennethEnglun/aistduyback.git
 
 ## 使用說明
