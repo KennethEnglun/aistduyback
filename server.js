@@ -153,7 +153,7 @@ app.post('/api/generate-questions', async (req, res) => {
             saveStudyContent(grade, subject, topic, studyContent.trim());
             
             // 進階功能：基於詳細學習內容生成問題
-            prompt = `請仔細閱讀以下學習內容，為${grade}學生生成10道${subject}科目的多項選擇題。
+            prompt = `請仔細閱讀以下學習內容，為${grade}學生生成15道${subject}科目的多項選擇題。
 
 學習內容：
 ${studyContent}
@@ -187,7 +187,7 @@ ${studyContent}
 請確保回答是有效的JSON格式。`;
         } else {
             // 普通功能：基於主題生成問題
-            prompt = `請為${grade}學生生成10道${subject}科目關於"${topic}"的多項選擇題。
+            prompt = `請為${grade}學生生成15道${subject}科目關於"${topic}"的多項選擇題。
 
 要求：
 1. 難度：${difficultyLevel}
