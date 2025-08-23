@@ -90,6 +90,23 @@
                         </button>
                     </div>
 
+                    <!-- 題目類型選擇 -->
+                    <div class="question-type-selection">
+                        <h4><i class="fas fa-question-circle"></i> 選擇題目類型</h4>
+                        <div class="type-selection">
+                            <button class="type-btn active" id="multiple-choice-btn" onclick="selectQuestionType('multiple_choice')">
+                                <i class="fas fa-list-ul"></i>
+                                多項選擇題
+                                <small>選擇正確答案</small>
+                            </button>
+                            <button class="type-btn" id="short-answer-btn" onclick="selectQuestionType('short_answer')">
+                                <i class="fas fa-pencil-alt"></i>
+                                短答題模式
+                                <small>輸入文字答案</small>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- 快速模式 -->
                     <div class="topic-form" id="simple-mode">
                         <label for="topic">學習主題：</label>

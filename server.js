@@ -56,6 +56,9 @@ db.serialize(() => {
         study_content TEXT,
         score INTEGER NOT NULL,
         total_questions INTEGER NOT NULL,
+        questions_data TEXT,
+        user_answers TEXT,
+        question_type TEXT DEFAULT 'multiple_choice',
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
     
@@ -68,6 +71,25 @@ db.serialize(() => {
         study_content TEXT NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+    
+    // 添加新欄位到現有的scores表（如果不存在）
+    db.run(`ALTER TABLE scores ADD COLUMN questions_data TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column')) {
+            console.error('添加questions_data欄位錯誤:', err);
+        }
+    });
+    
+    db.run(`ALTER TABLE scores ADD COLUMN user_answers TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column')) {
+            console.error('添加user_answers欄位錯誤:', err);
+        }
+    });
+    
+    db.run(`ALTER TABLE scores ADD COLUMN question_type TEXT DEFAULT 'multiple_choice'`, (err) => {
+        if (err && !err.message.includes('duplicate column')) {
+            console.error('添加question_type欄位錯誤:', err);
+        }
+    });
 });
 
 // 年級和科目配置
@@ -137,7 +159,7 @@ function saveStudyContent(grade, subject, topic, studyContent) {
 // 生成問題的API
 app.post('/api/generate-questions', async (req, res) => {
     try {
-        const { grade, subject, topic, studyContent } = req.body;
+        const { grade, subject, topic, studyContent, questionType } = req.body;
         
         if (!GRADES.includes(grade) || !SUBJECTS.includes(subject)) {
             return res.status(400).json({ error: '無效的年級或科目' });
@@ -147,13 +169,15 @@ app.post('/api/generate-questions', async (req, res) => {
         const subjectScope = getSubjectScope(subject);
         
         let prompt;
+        const isShortAnswer = questionType === 'short_answer';
+        const questionTypeText = isShortAnswer ? '短答題' : '多項選擇題';
         
         if (studyContent && studyContent.trim()) {
             // 保存學習內容到歷史（限制最近100條）
             saveStudyContent(grade, subject, topic, studyContent.trim());
             
             // 進階功能：基於詳細學習內容生成問題
-            prompt = `請仔細閱讀以下學習內容，為${grade}學生生成10道${subject}科目的多項選擇題。
+            prompt = `請仔細閱讀以下學習內容，為${grade}學生生成10道${subject}科目的${questionTypeText}。
 
 學習內容：
 ${studyContent}
@@ -162,12 +186,33 @@ ${studyContent}
 1. 問題必須緊密圍繞上述學習內容出題
 2. 難度：${difficultyLevel}
 3. ${subjectScope}
-4. 每題包含4個選項（A、B、C、D）
+${isShortAnswer ? 
+`4. 每題要求學生用簡短文字回答
+5. 答案應該簡潔明確，適合${grade}學生表達
+6. 問題要測試學生對學習內容的理解和記憶
+7. 語言要簡單易懂，適合${grade}學生
+8. 避免過於抽象或複雜的概念
+9. 必須使用繁體中文（Traditional Chinese）出題，不可使用簡體中文
+10. 所有題目、答案和內容都必須是繁體中文
+11. 請以JSON格式回答，格式如下：
+
+{
+  "questions": [
+    {
+      "question": "問題內容",
+      "correct_answer": "標準答案",
+      "type": "short_answer"
+    }
+  ]
+}` :
+`4. 每題包含4個選項（A、B、C、D）
 5. 只有一個正確答案
 6. 問題要測試學生對學習內容的理解和記憶
 7. 語言要簡單易懂，適合${grade}學生
 8. 避免過於抽象或複雜的概念
-9. 請以JSON格式回答，格式如下：
+9. 必須使用繁體中文（Traditional Chinese）出題，不可使用簡體中文
+10. 所有題目、選項和內容都必須是繁體中文
+11. 請以JSON格式回答，格式如下：
 
 {
   "questions": [
@@ -179,26 +224,49 @@ ${studyContent}
         "C": "選項C",
         "D": "選項D"
       },
-      "correct_answer": "A"
+      "correct_answer": "A",
+      "type": "multiple_choice"
     }
   ]
-}
+}`}
 
 請確保回答是有效的JSON格式。`;
         } else {
             // 普通功能：基於主題生成問題
-            prompt = `請為${grade}學生生成10道${subject}科目關於"${topic}"的多項選擇題。
+            prompt = `請為${grade}學生生成10道${subject}科目關於"${topic}"的${questionTypeText}。
 
 要求：
 1. 難度：${difficultyLevel}
 2. ${subjectScope}
-3. 每題包含4個選項（A、B、C、D）
+${isShortAnswer ?
+`3. 每題要求學生用簡短文字回答
+4. 答案應該簡潔明確，適合${grade}學生表達
+5. 問題要與"${topic}"主題相關
+6. 語言要簡單易懂，適合${grade}學生理解
+7. 避免過於複雜的計算或抽象概念
+8. 使用日常生活中的例子讓學生容易理解
+9. 必須使用繁體中文（Traditional Chinese）出題，不可使用簡體中文
+10. 所有題目、答案和內容都必須是繁體中文
+11. 請以JSON格式回答，格式如下：
+
+{
+  "questions": [
+    {
+      "question": "問題內容",
+      "correct_answer": "標準答案",
+      "type": "short_answer"
+    }
+  ]
+}` :
+`3. 每題包含4個選項（A、B、C、D）
 4. 只有一個正確答案
 5. 問題要與"${topic}"主題相關
 6. 語言要簡單易懂，適合${grade}學生理解
 7. 避免過於複雜的計算或抽象概念
 8. 使用日常生活中的例子讓學生容易理解
-9. 請以JSON格式回答，格式如下：
+9. 必須使用繁體中文（Traditional Chinese）出題，不可使用簡體中文
+10. 所有題目、選項和內容都必須是繁體中文
+11. 請以JSON格式回答，格式如下：
 
 {
   "questions": [
@@ -210,10 +278,11 @@ ${studyContent}
         "C": "選項C",
         "D": "選項D"
       },
-      "correct_answer": "A"
+      "correct_answer": "A",
+      "type": "multiple_choice"
     }
   ]
-}
+}`}
 
 請確保回答是有效的JSON格式。`;
         }
@@ -303,11 +372,22 @@ ${studyContent}
 
 // 保存分數API
 app.post('/api/save-score', (req, res) => {
-    const { grade, subject, topic, score, totalQuestions, userName, studyContent } = req.body;
+    const { grade, subject, topic, score, totalQuestions, userName, studyContent, questionsData, userAnswers, questionType } = req.body;
     
     db.run(
-        'INSERT INTO scores (user_name, grade, subject, topic, study_content, score, total_questions) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [userName || '匿名用戶', grade, subject, topic, studyContent || null, score, totalQuestions],
+        'INSERT INTO scores (user_name, grade, subject, topic, study_content, score, total_questions, questions_data, user_answers, question_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+            userName || '匿名用戶', 
+            grade, 
+            subject, 
+            topic, 
+            studyContent || null, 
+            score, 
+            totalQuestions,
+            questionsData ? JSON.stringify(questionsData) : null,
+            userAnswers ? JSON.stringify(userAnswers) : null,
+            questionType || 'multiple_choice'
+        ],
         function(err) {
             if (err) {
                 console.error('保存分數錯誤:', err);
@@ -323,9 +403,9 @@ app.get('/api/leaderboard', (req, res) => {
     const { grade, subject } = req.query;
     
     let query = `
-        SELECT user_name, grade, subject, topic, score, total_questions, 
+        SELECT id, user_name, grade, subject, topic, score, total_questions, 
                ROUND((score * 100.0 / total_questions), 1) as percentage,
-               timestamp
+               timestamp, questions_data, user_answers, question_type
         FROM scores 
     `;
     
@@ -355,6 +435,41 @@ app.get('/api/leaderboard', (req, res) => {
         }
         res.json(rows);
     });
+});
+
+// 獲取問答歷史詳情API
+app.get('/api/quiz-history/:id', (req, res) => {
+    const { id } = req.params;
+    
+    db.get(
+        'SELECT * FROM scores WHERE id = ?',
+        [id],
+        (err, row) => {
+            if (err) {
+                console.error('獲取問答歷史錯誤:', err);
+                return res.status(500).json({ error: '獲取問答歷史失敗' });
+            }
+            
+            if (!row) {
+                return res.status(404).json({ error: '問答記錄不存在' });
+            }
+            
+            // 解析JSON資料
+            try {
+                if (row.questions_data) {
+                    row.questions_data = JSON.parse(row.questions_data);
+                }
+                if (row.user_answers) {
+                    row.user_answers = JSON.parse(row.user_answers);
+                }
+            } catch (parseError) {
+                console.error('解析問答資料錯誤:', parseError);
+                return res.status(500).json({ error: '問答資料格式錯誤' });
+            }
+            
+            res.json(row);
+        }
+    );
 });
 
 // 獲取統計數據API

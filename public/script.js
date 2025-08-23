@@ -3,6 +3,7 @@ let selectedGrade = '';
 let selectedSubject = '';
 let selectedTopic = '';
 let selectedMode = 'simple';
+let selectedQuestionType = 'multiple_choice';
 let studyContent = '';
 let questions = [];
 let currentQuestionIndex = 0;
@@ -168,6 +169,18 @@ function selectMode(mode) {
     updateTopicDisplay();
 }
 
+// 選擇題目類型
+function selectQuestionType(type) {
+    selectedQuestionType = type;
+    
+    // 更新按鈕狀態
+    document.getElementById('multiple-choice-btn').classList.remove('active');
+    document.getElementById('short-answer-btn').classList.remove('active');
+    document.getElementById(`${type.replace('_', '-')}-btn`).classList.add('active');
+    
+    updateSelectionSummary();
+}
+
 // 更新主題顯示
 function updateTopicDisplay() {
     if (selectedMode === 'simple') {
@@ -215,7 +228,8 @@ async function startQuiz() {
         const requestBody = {
             grade: selectedGrade,
             subject: selectedSubject,
-            topic: selectedTopic
+            topic: selectedTopic,
+            questionType: selectedQuestionType
         };
 
         if (selectedMode === 'advanced' && studyContent.trim()) {
@@ -284,50 +298,98 @@ function displayQuestion() {
     // 顯示問題
     document.getElementById('question-text').textContent = question.question;
 
-    // 生成選項
+    // 生成選項或輸入框
     const optionsGrid = document.getElementById('options-grid');
     optionsGrid.innerHTML = '';
 
-    Object.entries(question.options).forEach(([key, value]) => {
-        const optionBtn = document.createElement('button');
-        optionBtn.className = 'option-btn';
-        optionBtn.textContent = `${key}. ${value}`;
-        optionBtn.addEventListener('click', () => selectOption(key));
-        optionsGrid.appendChild(optionBtn);
-    });
+    if (selectedQuestionType === 'short_answer' || question.type === 'short_answer') {
+        // 短答題：顯示文字輸入框
+        const answerInput = document.createElement('textarea');
+        answerInput.className = 'short-answer-input';
+        answerInput.placeholder = '請在此輸入您的答案...';
+        answerInput.rows = 4;
+        answerInput.maxLength = 200;
+        
+        if (userAnswers[currentQuestionIndex]) {
+            answerInput.value = userAnswers[currentQuestionIndex];
+        }
+        
+        answerInput.addEventListener('input', () => {
+            userAnswers[currentQuestionIndex] = answerInput.value.trim();
+            updateControlButtons();
+        });
+        
+        optionsGrid.appendChild(answerInput);
+        
+        // 添加字數提示
+        const charCount = document.createElement('div');
+        charCount.className = 'char-count-display';
+        charCount.textContent = `字數：${answerInput.value.length} / 200`;
+        
+        answerInput.addEventListener('input', () => {
+            charCount.textContent = `字數：${answerInput.value.length} / 200`;
+        });
+        
+        optionsGrid.appendChild(charCount);
+        
+    } else {
+        // 多項選擇題：顯示選項按鈕
+        Object.entries(question.options).forEach(([key, value]) => {
+            const optionBtn = document.createElement('button');
+            optionBtn.className = 'option-btn';
+            optionBtn.textContent = `${key}. ${value}`;
+            optionBtn.addEventListener('click', () => selectOption(key));
+            optionsGrid.appendChild(optionBtn);
+        });
+    }
 
     // 如果用戶之前選過答案，恢復選擇狀態
     if (userAnswers[currentQuestionIndex]) {
-        const optionButtons = document.querySelectorAll('.option-btn');
-        const selectedOptionKey = userAnswers[currentQuestionIndex];
-        optionButtons.forEach((btn, index) => {
-            const optionKey = String.fromCharCode(65 + index); // A, B, C, D
-            if (optionKey === selectedOptionKey) {
-                btn.classList.add('selected');
+        if (selectedQuestionType === 'short_answer' || question.type === 'short_answer') {
+            const answerInput = document.querySelector('.short-answer-input');
+            if (answerInput) {
+                answerInput.value = userAnswers[currentQuestionIndex];
             }
-        });
+        } else {
+            const optionButtons = document.querySelectorAll('.option-btn');
+            const selectedOptionKey = userAnswers[currentQuestionIndex];
+            optionButtons.forEach((btn, index) => {
+                const optionKey = String.fromCharCode(65 + index); // A, B, C, D
+                if (optionKey === selectedOptionKey) {
+                    btn.classList.add('selected');
+                }
+            });
+        }
     }
 
     // 如果答案已確認，恢復確認狀態
     if (answerConfirmed[currentQuestionIndex]) {
-        const optionButtons = document.querySelectorAll('.option-btn');
-        optionButtons.forEach(btn => {
-            btn.classList.add('disabled');
-        });
-        
-        // 標記正確和錯誤選項
-        const correctAnswer = questions[currentQuestionIndex].correct_answer;
-        const userAnswer = userAnswers[currentQuestionIndex];
-        
-        optionButtons.forEach((btn, index) => {
-            const optionKey = String.fromCharCode(65 + index);
-            
-            if (optionKey === correctAnswer) {
-                btn.classList.add('correct');
-            } else if (optionKey === userAnswer && userAnswer !== correctAnswer) {
-                btn.classList.add('incorrect');
+        if (selectedQuestionType === 'short_answer' || question.type === 'short_answer') {
+            const answerInput = document.querySelector('.short-answer-input');
+            if (answerInput) {
+                answerInput.disabled = true;
+                answerInput.classList.add('disabled');
             }
-        });
+        } else {
+            const optionButtons = document.querySelectorAll('.option-btn');
+            optionButtons.forEach(btn => {
+                btn.classList.add('disabled');
+            });
+            
+            // 標記正確和錯誤選項
+            const correctAnswer = questions[currentQuestionIndex].correct_answer;
+            const userAnswer = userAnswers[currentQuestionIndex];
+            
+            optionButtons.forEach((btn, index) => {
+                const optionKey = String.fromCharCode(65 + index);
+                
+                if (optionKey === correctAnswer) {
+                    btn.classList.add('correct');
+                } else if (optionKey === userAnswer && userAnswer !== correctAnswer) {
+                    btn.classList.add('incorrect');
+                }
+            });
+        }
         
         showAnswerExplanation();
     } else {
@@ -378,7 +440,16 @@ function updateControlButtons() {
     // 上一題按鈕
     prevBtn.disabled = currentQuestionIndex === 0;
 
-    const hasAnswer = userAnswers[currentQuestionIndex] !== null;
+    const currentQuestion = questions[currentQuestionIndex];
+    const isShortAnswer = selectedQuestionType === 'short_answer' || currentQuestion.type === 'short_answer';
+    
+    let hasAnswer;
+    if (isShortAnswer) {
+        hasAnswer = userAnswers[currentQuestionIndex] && userAnswers[currentQuestionIndex].trim() !== '';
+    } else {
+        hasAnswer = userAnswers[currentQuestionIndex] !== null;
+    }
+    
     const isConfirmed = answerConfirmed[currentQuestionIndex];
 
     if (isConfirmed) {
@@ -403,9 +474,19 @@ function updateControlButtons() {
 
 // 確認答案
 function confirmAnswer() {
-    if (userAnswers[currentQuestionIndex] === null) {
-        alert('請選擇一個答案！');
-        return;
+    const currentQuestion = questions[currentQuestionIndex];
+    const isShortAnswer = selectedQuestionType === 'short_answer' || currentQuestion.type === 'short_answer';
+    
+    if (isShortAnswer) {
+        if (!userAnswers[currentQuestionIndex] || userAnswers[currentQuestionIndex].trim() === '') {
+            alert('請輸入您的答案！');
+            return;
+        }
+    } else {
+        if (userAnswers[currentQuestionIndex] === null) {
+            alert('請選擇一個答案！');
+            return;
+        }
     }
 
     // 標記答案已確認
@@ -414,25 +495,34 @@ function confirmAnswer() {
     // 顯示正確答案和解析
     showAnswerExplanation();
     
-    // 禁用所有選項按鈕
-    const optionButtons = document.querySelectorAll('.option-btn');
-    optionButtons.forEach(btn => {
-        btn.classList.add('disabled');
-    });
-    
-    // 標記正確和錯誤選項
-    const correctAnswer = questions[currentQuestionIndex].correct_answer;
-    const userAnswer = userAnswers[currentQuestionIndex];
-    
-    optionButtons.forEach((btn, index) => {
-        const optionKey = String.fromCharCode(65 + index); // A, B, C, D
-        
-        if (optionKey === correctAnswer) {
-            btn.classList.add('correct');
-        } else if (optionKey === userAnswer && userAnswer !== correctAnswer) {
-            btn.classList.add('incorrect');
+    if (isShortAnswer) {
+        // 禁用文字輸入框
+        const answerInput = document.querySelector('.short-answer-input');
+        if (answerInput) {
+            answerInput.disabled = true;
+            answerInput.classList.add('disabled');
         }
-    });
+    } else {
+        // 禁用所有選項按鈕
+        const optionButtons = document.querySelectorAll('.option-btn');
+        optionButtons.forEach(btn => {
+            btn.classList.add('disabled');
+        });
+        
+        // 標記正確和錯誤選項
+        const correctAnswer = questions[currentQuestionIndex].correct_answer;
+        const userAnswer = userAnswers[currentQuestionIndex];
+        
+        optionButtons.forEach((btn, index) => {
+            const optionKey = String.fromCharCode(65 + index); // A, B, C, D
+            
+            if (optionKey === correctAnswer) {
+                btn.classList.add('correct');
+            } else if (optionKey === userAnswer && userAnswer !== correctAnswer) {
+                btn.classList.add('incorrect');
+            }
+        });
+    }
     
     // 更新控制按鈕
     updateControlButtons();
@@ -444,9 +534,18 @@ function showAnswerExplanation() {
     const resultIndicator = document.getElementById('result-indicator');
     const correctAnswerDisplay = document.getElementById('correct-answer-display');
     
-    const correctAnswer = questions[currentQuestionIndex].correct_answer;
+    const currentQuestion = questions[currentQuestionIndex];
+    const correctAnswer = currentQuestion.correct_answer;
     const userAnswer = userAnswers[currentQuestionIndex];
-    const isCorrect = userAnswer === correctAnswer;
+    const isShortAnswer = selectedQuestionType === 'short_answer' || currentQuestion.type === 'short_answer';
+    
+    let isCorrect;
+    if (isShortAnswer) {
+        // 短答題使用簡單的文字比較（可以擴展為更智能的比較）
+        isCorrect = userAnswer && userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+    } else {
+        isCorrect = userAnswer === correctAnswer;
+    }
     
     // 顯示對錯指示
     resultIndicator.className = 'result-indicator ' + (isCorrect ? 'correct' : 'incorrect');
@@ -455,8 +554,15 @@ function showAnswerExplanation() {
         : '<i class="fas fa-times-circle"></i> 答錯了，再努力！';
     
     // 顯示正確答案
-    const correctOption = questions[currentQuestionIndex].options[correctAnswer];
-    correctAnswerDisplay.innerHTML = `<strong>正確答案：${correctAnswer}. ${correctOption}</strong>`;
+    if (isShortAnswer) {
+        correctAnswerDisplay.innerHTML = `<strong>標準答案：${correctAnswer}</strong>`;
+        if (!isCorrect && userAnswer) {
+            correctAnswerDisplay.innerHTML += `<br><span style="color: #dc3545;">您的答案：${userAnswer}</span>`;
+        }
+    } else {
+        const correctOption = currentQuestion.options[correctAnswer];
+        correctAnswerDisplay.innerHTML = `<strong>正確答案：${correctAnswer}. ${correctOption}</strong>`;
+    }
     
     explanationDiv.style.display = 'block';
 }
@@ -498,7 +604,20 @@ async function finishQuiz() {
 function calculateScore() {
     score = 0;
     for (let i = 0; i < questions.length; i++) {
-        if (userAnswers[i] === questions[i].correct_answer) {
+        const question = questions[i];
+        const userAnswer = userAnswers[i];
+        const correctAnswer = question.correct_answer;
+        const isShortAnswer = selectedQuestionType === 'short_answer' || question.type === 'short_answer';
+        
+        let isCorrect;
+        if (isShortAnswer) {
+            // 短答題使用簡單的文字比較（可以擴展為更智能的比較）
+            isCorrect = userAnswer && userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+        } else {
+            isCorrect = userAnswer === correctAnswer;
+        }
+        
+        if (isCorrect) {
             score++;
         }
     }
@@ -526,7 +645,10 @@ async function saveScoreWithName() {
                 score: score,
                 totalQuestions: questions.length,
                 userName: userName,
-                studyContent: selectedMode === 'advanced' ? studyContent : null
+                studyContent: selectedMode === 'advanced' ? studyContent : null,
+                questionsData: questions,
+                userAnswers: userAnswers,
+                questionType: selectedQuestionType
             })
         });
 
@@ -589,6 +711,7 @@ function restartQuiz() {
     selectedSubject = '';
     selectedTopic = '';
     selectedMode = 'simple';
+    selectedQuestionType = 'multiple_choice';
     studyContent = '';
     questions = [];
     currentQuestionIndex = 0;
@@ -613,6 +736,10 @@ function restartQuiz() {
     document.getElementById('advanced-mode-btn').classList.remove('active');
     document.getElementById('simple-mode').style.display = 'block';
     document.getElementById('advanced-mode').style.display = 'none';
+    
+    // 重置題目類型選擇
+    document.getElementById('multiple-choice-btn').classList.add('active');
+    document.getElementById('short-answer-btn').classList.remove('active');
 
     // 返回首頁
     showSection('home');
@@ -668,7 +795,7 @@ function displayLeaderboard(data) {
     }
 
     let html = '<div class="leaderboard-item" style="font-weight: bold; background: #667eea; color: white;">';
-    html += '<div>排名</div><div>用戶</div><div>年級-科目-主題</div><div>分數</div><div>總數</div><div>百分比</div><div>時間</div>';
+    html += '<div>排名</div><div>用戶</div><div>年級-科目-主題</div><div>分數</div><div>總數</div><div>百分比</div><div>時間</div><div>操作</div>';
     html += '</div>';
 
     data.forEach((item, index) => {
@@ -684,6 +811,19 @@ function displayLeaderboard(data) {
         html += `<div>${item.total_questions}</div>`;
         html += `<div>${item.percentage}%</div>`;
         html += `<div>${date}</div>`;
+        html += `<div class="leaderboard-actions">`;
+        
+        // 只有當有問答資料時才顯示按鈕
+        if (item.questions_data && item.user_answers) {
+            html += `<button class="action-btn-small review-btn" onclick="reviewQuizHistory(${item.id})" title="重溫問答">`;
+            html += `<i class="fas fa-eye"></i> 重溫`;
+            html += `</button>`;
+            html += `<button class="action-btn-small copy-btn" onclick="copyQuizTopic(${item.id})" title="借用主題">`;
+            html += `<i class="fas fa-copy"></i> 借用`;
+            html += `</button>`;
+        }
+        
+        html += `</div>`;
         html += `</div>`;
     });
 
@@ -868,6 +1008,107 @@ function escapeHtml(unsafe) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;")
         .replace(/`/g, "&#96;");
+}
+
+// 重溫問答歷史
+async function reviewQuizHistory(quizId) {
+    try {
+        showLoading(true);
+        
+        const response = await fetch(`/api/quiz-history/${quizId}`);
+        if (!response.ok) {
+            throw new Error('獲取問答歷史失敗');
+        }
+        
+        const quizData = await response.json();
+        
+        // 設置全局變量
+        selectedGrade = quizData.grade;
+        selectedSubject = quizData.subject;
+        selectedTopic = quizData.topic;
+        questions = quizData.questions_data || [];
+        userAnswers = quizData.user_answers || [];
+        
+        if (questions.length === 0) {
+            alert('此問答記錄沒有題目資料');
+            return;
+        }
+        
+        // 初始化測驗狀態為重溫模式
+        currentQuestionIndex = 0;
+        answerConfirmed = new Array(questions.length).fill(true); // 所有答案都已確認
+        score = quizData.score;
+        
+        // 顯示測驗頁面
+        showSection('quiz');
+        setupQuizDisplay();
+        displayQuestion();
+        
+        // 添加重溫模式標識
+        const quizHeader = document.querySelector('.quiz-header');
+        const reviewNotice = document.createElement('div');
+        reviewNotice.className = 'review-notice';
+        reviewNotice.innerHTML = '<i class="fas fa-history"></i> 重溫模式 - 查看之前的問答記錄';
+        quizHeader.appendChild(reviewNotice);
+        
+    } catch (error) {
+        console.error('重溫問答歷史錯誤:', error);
+        alert('無法載入問答歷史，請重試');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// 借用主題功能
+async function copyQuizTopic(quizId) {
+    try {
+        const response = await fetch(`/api/quiz-history/${quizId}`);
+        if (!response.ok) {
+            throw new Error('獲取問答歷史失敗');
+        }
+        
+        const quizData = await response.json();
+        
+        // 重置到首頁並填入資料
+        restartQuiz();
+        
+        // 設置年級和科目
+        selectedGrade = quizData.grade;
+        selectedSubject = quizData.subject;
+        selectedTopic = quizData.topic;
+        
+        // 更新界面選擇狀態
+        const gradeBtn = document.querySelector(`[data-grade="${selectedGrade}"]`);
+        if (gradeBtn) {
+            gradeBtn.classList.add('selected');
+            document.getElementById('subject-selection').style.display = 'block';
+        }
+        
+        const subjectBtn = document.querySelector(`[data-subject="${selectedSubject}"]`);
+        if (subjectBtn) {
+            subjectBtn.classList.add('selected');
+            document.getElementById('topic-input').style.display = 'block';
+        }
+        
+        // 填入主題
+        document.getElementById('topic').value = selectedTopic;
+        
+        // 如果有學習內容，也填入進階模式
+        if (quizData.study_content) {
+            selectMode('advanced');
+            document.getElementById('topic-advanced').value = selectedTopic;
+            document.getElementById('study-content').value = quizData.study_content;
+            studyContent = quizData.study_content;
+        }
+        
+        updateSelectionSummary();
+        
+        alert(`已借用「${quizData.user_name}」的主題：${selectedTopic}，您可以開始新的測驗！`);
+        
+    } catch (error) {
+        console.error('借用主題錯誤:', error);
+        alert('無法借用主題，請重試');
+    }
 }
 
 // 初始化歷史功能
