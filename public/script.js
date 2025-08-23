@@ -12,6 +12,33 @@ let answerConfirmed = [];
 let score = 0;
 let userName = '';
 
+// Cookie 管理功能
+const CookieManager = {
+    // 設置Cookie
+    setCookie: function(name, value, days = 30) {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/`;
+    },
+    
+    // 獲取Cookie
+    getCookie: function(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+        }
+        return null;
+    },
+    
+    // 刪除Cookie
+    deleteCookie: function(name) {
+        document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+};
+
 // DOM 載入完成後初始化
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -20,9 +47,49 @@ document.addEventListener('DOMContentLoaded', function() {
 // 初始化應用
 function initializeApp() {
     setupEventListeners();
+    loadUserNameFromCookie();
     showSection('home');
     loadLeaderboard();
     loadStats();
+}
+
+// 從Cookie載入用戶名
+function loadUserNameFromCookie() {
+    const savedUserName = CookieManager.getCookie('userName');
+    if (savedUserName) {
+        userName = savedUserName;
+        console.log('📝 從Cookie載入用戶名:', userName);
+    }
+}
+
+// 清除保存的用戶名
+function clearSavedName() {
+    // 清除Cookie
+    CookieManager.deleteCookie('userName');
+    
+    // 清除輸入框
+    const userNameInput = document.getElementById('user-name');
+    if (userNameInput) {
+        userNameInput.value = '';
+    }
+    
+    // 重置全局變量
+    userName = '';
+    
+    console.log('📝 已清除保存的用戶名');
+    
+    // 顯示提示
+    const saveStatusDiv = document.getElementById('save-status');
+    if (saveStatusDiv) {
+        saveStatusDiv.textContent = '✅ 已清除保存的名字';
+        saveStatusDiv.className = 'save-status success';
+        
+        // 3秒後清除提示
+        setTimeout(() => {
+            saveStatusDiv.textContent = '';
+            saveStatusDiv.className = 'save-status';
+        }, 3000);
+    }
 }
 
 // 設置事件監聽器
@@ -740,6 +807,12 @@ async function saveScoreWithName() {
             saveStatusDiv.textContent = '✅ 成績已保存到排行榜！';
             saveStatusDiv.className = 'save-status success';
             
+            // 將用戶名保存到Cookie中（30天有效期）
+            if (userName && userName !== '匿名用戶') {
+                CookieManager.setCookie('userName', userName, 30);
+                console.log('📝 用戶名已保存到Cookie:', userName);
+            }
+            
             // 禁用保存按鈕
             document.querySelector('.save-score-btn').disabled = true;
             document.querySelector('.save-score-btn').textContent = '已保存';
@@ -786,6 +859,28 @@ function displayResults() {
     document.getElementById('result-grade').textContent = selectedGrade;
     document.getElementById('result-subject').textContent = selectedSubject;
     document.getElementById('result-topic').textContent = selectedTopic;
+    
+    // 從Cookie中載入之前保存的用戶名
+    const savedUserName = CookieManager.getCookie('userName');
+    const userNameInput = document.getElementById('user-name');
+    if (savedUserName && userNameInput) {
+        userNameInput.value = savedUserName;
+        userName = savedUserName;
+    }
+    
+    // 重置保存按鈕狀態
+    const saveBtn = document.querySelector('.save-score-btn');
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> 保存成績';
+    }
+    
+    // 清除之前的保存狀態
+    const saveStatusDiv = document.getElementById('save-status');
+    if (saveStatusDiv) {
+        saveStatusDiv.textContent = '';
+        saveStatusDiv.className = 'save-status';
+    }
 }
 
 // 重新開始測驗

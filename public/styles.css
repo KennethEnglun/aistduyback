@@ -1145,10 +1145,18 @@ body {
     gap: 1rem;
     justify-content: center;
     flex-wrap: wrap;
+    align-items: center;
+}
+
+.name-input-group {
+    display: flex;
+    align-items: center;
+    position: relative;
 }
 
 #user-name {
     padding: 0.8rem 1rem;
+    padding-right: 3rem;
     border: 2px solid #ddd;
     border-radius: 25px;
     font-size: 1rem;
@@ -1159,6 +1167,29 @@ body {
 #user-name:focus {
     outline: none;
     border-color: #667eea;
+}
+
+.clear-name-btn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.clear-name-btn:hover {
+    background: #f0f0f0;
+    color: #666;
+    transform: scale(1.1);
+}
+
+.clear-name-btn:active {
+    transform: scale(0.95);
 }
 
 .save-score-btn {
