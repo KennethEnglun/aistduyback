@@ -473,7 +473,7 @@ function updateControlButtons() {
 }
 
 // 確認答案
-function confirmAnswer() {
+async function confirmAnswer() {
     const currentQuestion = questions[currentQuestionIndex];
     const isShortAnswer = selectedQuestionType === 'short_answer' || currentQuestion.type === 'short_answer';
     
@@ -482,27 +482,76 @@ function confirmAnswer() {
             alert('請輸入您的答案！');
             return;
         }
+        
+        // 顯示載入狀態
+        const confirmBtn = document.getElementById('confirm-btn');
+        const originalText = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI評分中...';
+        confirmBtn.disabled = true;
+        
+        try {
+            // 調用AI評分API
+            const response = await fetch('/api/grade-short-answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    question: currentQuestion.question,
+                    userAnswer: userAnswers[currentQuestionIndex],
+                    correctAnswer: currentQuestion.correct_answer,
+                    grade: selectedGrade,
+                    subject: selectedSubject
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('AI評分失敗');
+            }
+            
+            const gradingResult = await response.json();
+            
+            // 將AI評分結果存儲到問題中
+            currentQuestion.aiGrading = gradingResult;
+            
+            // 標記答案已確認
+            answerConfirmed[currentQuestionIndex] = true;
+            
+            // 顯示正確答案和解析
+            showAnswerExplanation();
+            
+            // 禁用文字輸入框
+            const answerInput = document.querySelector('.short-answer-input');
+            if (answerInput) {
+                answerInput.disabled = true;
+                answerInput.classList.add('disabled');
+            }
+            
+        } catch (error) {
+            console.error('AI評分錯誤:', error);
+            alert('AI評分失敗，請重試！');
+            // 恢復按鈕狀態
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
+            return;
+        } finally {
+            // 恢復按鈕狀態
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
+        }
+        
     } else {
         if (userAnswers[currentQuestionIndex] === null) {
             alert('請選擇一個答案！');
             return;
         }
-    }
-
-    // 標記答案已確認
-    answerConfirmed[currentQuestionIndex] = true;
-    
-    // 顯示正確答案和解析
-    showAnswerExplanation();
-    
-    if (isShortAnswer) {
-        // 禁用文字輸入框
-        const answerInput = document.querySelector('.short-answer-input');
-        if (answerInput) {
-            answerInput.disabled = true;
-            answerInput.classList.add('disabled');
-        }
-    } else {
+        
+        // 標記答案已確認
+        answerConfirmed[currentQuestionIndex] = true;
+        
+        // 顯示正確答案和解析
+        showAnswerExplanation();
+        
         // 禁用所有選項按鈕
         const optionButtons = document.querySelectorAll('.option-btn');
         optionButtons.forEach(btn => {
@@ -541,8 +590,13 @@ function showAnswerExplanation() {
     
     let isCorrect;
     if (isShortAnswer) {
-        // 短答題使用簡單的文字比較（可以擴展為更智能的比較）
-        isCorrect = userAnswer && userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+        // 短答題使用AI評分結果
+        if (currentQuestion.aiGrading) {
+            isCorrect = currentQuestion.aiGrading.isCorrect;
+        } else {
+            // 如果沒有AI評分結果，使用簡單比較作為備用
+            isCorrect = userAnswer && userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+        }
     } else {
         isCorrect = userAnswer === correctAnswer;
     }
@@ -553,11 +607,23 @@ function showAnswerExplanation() {
         ? '<i class="fas fa-check-circle"></i> 答對了！太棒了！' 
         : '<i class="fas fa-times-circle"></i> 答錯了，再努力！';
     
-    // 顯示正確答案
+    // 顯示正確答案和AI評分結果
     if (isShortAnswer) {
         correctAnswerDisplay.innerHTML = `<strong>標準答案：${correctAnswer}</strong>`;
-        if (!isCorrect && userAnswer) {
+        if (userAnswer) {
             correctAnswerDisplay.innerHTML += `<br><span style="color: #dc3545;">您的答案：${userAnswer}</span>`;
+        }
+        
+        // 顯示AI評分結果
+        if (currentQuestion.aiGrading) {
+            const aiResult = currentQuestion.aiGrading;
+            correctAnswerDisplay.innerHTML += `
+                <div class="ai-grading-result">
+                    <div class="ai-score">AI評分：${aiResult.score}分</div>
+                    <div class="ai-feedback"><strong>評語：</strong>${aiResult.feedback}</div>
+                    <div class="ai-reasoning"><strong>分析：</strong>${aiResult.reasoning}</div>
+                </div>
+            `;
         }
     } else {
         const correctOption = currentQuestion.options[correctAnswer];
@@ -611,8 +677,13 @@ function calculateScore() {
         
         let isCorrect;
         if (isShortAnswer) {
-            // 短答題使用簡單的文字比較（可以擴展為更智能的比較）
-            isCorrect = userAnswer && userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+            // 短答題使用AI評分結果
+            if (question.aiGrading) {
+                isCorrect = question.aiGrading.isCorrect;
+            } else {
+                // 如果沒有AI評分結果，使用簡單比較作為備用
+                isCorrect = userAnswer && userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+            }
         } else {
             isCorrect = userAnswer === correctAnswer;
         }
@@ -706,12 +777,14 @@ function displayResults() {
 
 // 重新開始測驗
 function restartQuiz() {
-    // 重置所有狀態
-    selectedGrade = '';
-    selectedSubject = '';
+    // 保存當前的年級和科目選擇，只重置測驗相關狀態
+    const currentGrade = selectedGrade;
+    const currentSubject = selectedSubject;
+    const currentMode = selectedMode;
+    const currentQuestionType = selectedQuestionType;
+    
+    // 重置測驗相關狀態
     selectedTopic = '';
-    selectedMode = 'simple';
-    selectedQuestionType = 'multiple_choice';
     studyContent = '';
     questions = [];
     currentQuestionIndex = 0;
@@ -721,15 +794,15 @@ function restartQuiz() {
     userName = '';
 
     // 重置界面
-    document.querySelectorAll('.grade-btn').forEach(btn => btn.classList.remove('selected'));
-    document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
     document.getElementById('topic').value = '';
     document.getElementById('topic-advanced').value = '';
     document.getElementById('study-content').value = '';
     document.getElementById('user-name').value = '';
+    document.getElementById('selection-summary').style.display = 'none';
+    
+    // 保持年級和科目選擇，但隱藏後續步驟
     document.getElementById('subject-selection').style.display = 'none';
     document.getElementById('topic-input').style.display = 'none';
-    document.getElementById('selection-summary').style.display = 'none';
     
     // 重置模式選擇
     document.getElementById('simple-mode-btn').classList.add('active');

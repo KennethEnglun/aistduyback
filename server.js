@@ -472,6 +472,82 @@ app.get('/api/quiz-history/:id', (req, res) => {
     );
 });
 
+// 短答題AI評分API
+app.post('/api/grade-short-answer', async (req, res) => {
+    try {
+        const { question, userAnswer, correctAnswer, grade, subject } = req.body;
+        
+        if (!question || !userAnswer || !correctAnswer) {
+            return res.status(400).json({ error: '缺少必要參數' });
+        }
+        
+        // 構建AI評分提示詞
+        const gradingPrompt = `請作為一位${grade}的${subject}老師，評分以下短答題：
+
+問題：${question}
+標準答案：${correctAnswer}
+學生答案：${userAnswer}
+
+請仔細分析學生答案是否正確。評分標準：
+1. 如果學生答案在語義上與標準答案相符，即使用詞不同，也應該算對
+2. 如果學生答案包含標準答案的核心概念，應該算對
+3. 如果學生答案完全錯誤或偏離主題，應該算錯
+4. 考慮${grade}學生的表達能力和理解水平
+
+請以JSON格式回答：
+{
+  "isCorrect": true/false,
+  "score": 0-100,
+  "feedback": "評分理由和建議",
+  "reasoning": "詳細分析過程"
+}
+
+請確保回答是有效的JSON格式。`;
+        
+        const requestPayload = {
+            model: "deepseek-chat",
+            messages: [
+                {
+                    role: "user",
+                    content: gradingPrompt
+                }
+            ],
+            max_tokens: 1000,
+            temperature: 0.3
+        };
+        
+        const cleanKey = DEEPSEEK_API_KEY.replace(/[^\w-]/g, '');
+        const finalKey = cleanKey !== DEEPSEEK_API_KEY ? cleanKey : DEEPSEEK_API_KEY;
+        const authHeader = `Bearer ${finalKey}`.trim();
+        
+        const response = await axios.post(DEEPSEEK_API_URL, requestPayload, {
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json',
+                'User-Agent': 'LPMS-Quiz-Platform/1.0'
+            },
+            timeout: 30000
+        });
+        
+        let content = response.data.choices[0].message.content;
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        
+        let gradingResult;
+        try {
+            gradingResult = JSON.parse(content);
+        } catch (parseError) {
+            console.error('AI評分回應解析錯誤:', parseError);
+            return res.status(500).json({ error: 'AI評分失敗，請重試' });
+        }
+        
+        res.json(gradingResult);
+        
+    } catch (error) {
+        console.error('短答題評分錯誤:', error.message);
+        res.status(500).json({ error: '評分失敗：' + error.message });
+    }
+});
+
 // 獲取統計數據API
 app.get('/api/stats', (req, res) => {
     const { grade, subject } = req.query;
