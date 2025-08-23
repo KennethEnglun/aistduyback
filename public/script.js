@@ -703,24 +703,37 @@ async function saveScoreWithName() {
     saveStatusDiv.textContent = '正在保存...';
     saveStatusDiv.className = 'save-status';
     
+    // 添加調試日誌
+    const saveData = {
+        grade: selectedGrade,
+        subject: selectedSubject,
+        topic: selectedTopic,
+        score: score,
+        totalQuestions: questions.length,
+        userName: userName,
+        studyContent: selectedMode === 'advanced' ? studyContent : null,
+        questionsData: questions,
+        userAnswers: userAnswers,
+        questionType: selectedQuestionType
+    };
+    
+    console.log('📝 前端保存分數數據:', {
+        grade: saveData.grade,
+        subject: saveData.subject,
+        topic: saveData.topic,
+        score: saveData.score,
+        totalQuestions: saveData.totalQuestions,
+        userName: saveData.userName,
+        questionType: saveData.questionType
+    });
+    
     try {
         const response = await fetch('/api/save-score', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                grade: selectedGrade,
-                subject: selectedSubject,
-                topic: selectedTopic,
-                score: score,
-                totalQuestions: questions.length,
-                userName: userName,
-                studyContent: selectedMode === 'advanced' ? studyContent : null,
-                questionsData: questions,
-                userAnswers: userAnswers,
-                questionType: selectedQuestionType
-            })
+            body: JSON.stringify(saveData)
         });
 
         if (response.ok) {
@@ -777,13 +790,7 @@ function displayResults() {
 
 // 重新開始測驗
 function restartQuiz() {
-    // 保存當前的年級和科目選擇，只重置測驗相關狀態
-    const currentGrade = selectedGrade;
-    const currentSubject = selectedSubject;
-    const currentMode = selectedMode;
-    const currentQuestionType = selectedQuestionType;
-    
-    // 重置測驗相關狀態
+    // 重置測驗相關狀態，但保持年級和科目選擇
     selectedTopic = '';
     studyContent = '';
     questions = [];

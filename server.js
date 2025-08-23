@@ -374,6 +374,23 @@ ${isShortAnswer ?
 app.post('/api/save-score', (req, res) => {
     const { grade, subject, topic, score, totalQuestions, userName, studyContent, questionsData, userAnswers, questionType } = req.body;
     
+    // 添加詳細的調試日誌
+    console.log('📝 保存分數請求:', {
+        userName: userName || '匿名用戶',
+        grade,
+        subject,
+        topic,
+        score,
+        totalQuestions,
+        questionType: questionType || 'multiple_choice'
+    });
+    
+    // 檢查必要欄位
+    if (!grade || !subject || !topic) {
+        console.error('❌ 缺少必要欄位:', { grade, subject, topic });
+        return res.status(400).json({ error: '缺少必要欄位：年級、科目或主題' });
+    }
+    
     db.run(
         'INSERT INTO scores (user_name, grade, subject, topic, study_content, score, total_questions, questions_data, user_answers, question_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
@@ -390,9 +407,10 @@ app.post('/api/save-score', (req, res) => {
         ],
         function(err) {
             if (err) {
-                console.error('保存分數錯誤:', err);
+                console.error('❌ 保存分數錯誤:', err);
                 return res.status(500).json({ error: '保存分數失敗' });
             }
+            console.log('✅ 分數保存成功，ID:', this.lastID);
             res.json({ success: true, id: this.lastID });
         }
     );
@@ -401,6 +419,8 @@ app.post('/api/save-score', (req, res) => {
 // 獲取排行榜API
 app.get('/api/leaderboard', (req, res) => {
     const { grade, subject } = req.query;
+    
+    console.log('🏆 獲取排行榜請求:', { grade, subject });
     
     let query = `
         SELECT id, user_name, grade, subject, topic, score, total_questions, 
@@ -428,11 +448,14 @@ app.get('/api/leaderboard', (req, res) => {
     
     query += ' ORDER BY percentage DESC, timestamp DESC LIMIT 50';
     
+    console.log('🔍 執行查詢:', query, 'params:', params);
+    
     db.all(query, params, (err, rows) => {
         if (err) {
-            console.error('獲取排行榜錯誤:', err);
+            console.error('❌ 獲取排行榜錯誤:', err);
             return res.status(500).json({ error: '獲取排行榜失敗' });
         }
+        console.log('✅ 排行榜查詢成功，返回', rows.length, '條記錄');
         res.json(rows);
     });
 });
