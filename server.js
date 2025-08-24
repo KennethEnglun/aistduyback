@@ -13,34 +13,34 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// DeepSeek AI 配置
-let DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-c47eb9db749e4d0da072557681f52e83';
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+// Moonshot AI 配置
+let MOONSHOT_API_KEY = process.env.MOONSHOT_API_KEY || 'sk-vk1i7KpqLdUssyl9gEPb4CHz5ZxKpb60A1EpTuMzwPYyu6U4';
+const MOONSHOT_API_URL = 'https://api.moonshot.cn/v1/chat/completions';
 
 // 清理API Key - 移除可能的無效字符
-DEEPSEEK_API_KEY = DEEPSEEK_API_KEY.trim().replace(/[\r\n\t]/g, '');
+MOONSHOT_API_KEY = MOONSHOT_API_KEY.trim().replace(/[\r\n\t]/g, '');
 
 // 檢查API密鑰配置
-console.log('🔑 DeepSeek API配置檢查:');
+console.log('🔑 Moonshot AI API配置檢查:');
 console.log('📊 環境變量檢查:');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- PORT:', process.env.PORT);
-console.log('- API Key存在:', !!process.env.DEEPSEEK_API_KEY);
-console.log('- 原始API Key長度:', process.env.DEEPSEEK_API_KEY ? process.env.DEEPSEEK_API_KEY.length : 0);
+console.log('- API Key存在:', !!process.env.MOONSHOT_API_KEY);
+console.log('- 原始API Key長度:', process.env.MOONSHOT_API_KEY ? process.env.MOONSHOT_API_KEY.length : 0);
 
-if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY === 'undefined') {
-    console.error('❌ DeepSeek API Key 未設置或無效');
-    console.error('🔍 當前環境變量中的API Key:', process.env.DEEPSEEK_API_KEY ? 'EXISTS' : 'NOT_FOUND');
+if (!MOONSHOT_API_KEY || MOONSHOT_API_KEY === 'undefined') {
+    console.error('❌ Moonshot AI API Key 未設置或無效');
+    console.error('🔍 當前環境變量中的API Key:', process.env.MOONSHOT_API_KEY ? 'EXISTS' : 'NOT_FOUND');
 } else {
-    console.log('✅ DeepSeek API Key 已設置:', `${DEEPSEEK_API_KEY.substring(0, 10)}...`);
-    console.log('🔍 清理後Key長度:', DEEPSEEK_API_KEY.length);
-    console.log('🔍 Key格式檢查:', DEEPSEEK_API_KEY.startsWith('sk-') ? '✅ 正確格式' : '❌ 格式錯誤');
+    console.log('✅ Moonshot AI API Key 已設置:', `${MOONSHOT_API_KEY.substring(0, 10)}...`);
+    console.log('🔍 清理後Key長度:', MOONSHOT_API_KEY.length);
+    console.log('🔍 Key格式檢查:', MOONSHOT_API_KEY.startsWith('sk-') ? '✅ 正確格式' : '❌ 格式錯誤');
     
     // 檢查是否有特殊字符
-    const hasSpecialChars = /[^\w-]/.test(DEEPSEEK_API_KEY.replace('sk-', ''));
+    const hasSpecialChars = /[^\w-]/.test(MOONSHOT_API_KEY.replace('sk-', ''));
     console.log('🔍 特殊字符檢查:', hasSpecialChars ? '❌ 含有特殊字符' : '✅ 無特殊字符');
 }
-console.log('🔗 API URL:', DEEPSEEK_API_URL);
+console.log('🔗 API URL:', MOONSHOT_API_URL);
 
 // 初始化數據庫
 const db = new sqlite3.Database('./quiz_database.db');
@@ -287,13 +287,13 @@ ${isShortAnswer ?
 請確保回答是有效的JSON格式。`;
         }
 
-        console.log('🚀 開始調用DeepSeek API...');
+        console.log('🚀 開始調用Moonshot AI API...');
         console.log('📝 年級:', grade, '科目:', subject, '主題:', topic);
-        console.log('🔑 API Key前10位:', DEEPSEEK_API_KEY.substring(0, 10));
+        console.log('🔑 API Key前10位:', MOONSHOT_API_KEY.substring(0, 10));
         console.log('📏 提示內容長度:', prompt.length, '字符');
         
         const requestPayload = {
-            model: "deepseek-chat",
+            model: "moonshot-v1-8k",
             messages: [
                 {
                     role: "user",
@@ -305,8 +305,8 @@ ${isShortAnswer ?
         };
 
         // 清理API Key並安全構建Authorization頭部
-        const cleanKey = DEEPSEEK_API_KEY.replace(/[^\w-]/g, '');
-        const finalKey = cleanKey !== DEEPSEEK_API_KEY ? cleanKey : DEEPSEEK_API_KEY;
+        const cleanKey = MOONSHOT_API_KEY.replace(/[^\w-]/g, '');
+        const finalKey = cleanKey !== MOONSHOT_API_KEY ? cleanKey : MOONSHOT_API_KEY;
         const authHeader = `Bearer ${finalKey}`.trim();
         console.log('🔍 使用Authorization頭部長度:', authHeader.length);
 
@@ -319,8 +319,8 @@ ${isShortAnswer ?
             timeout: 60000 // 60秒超時（Railway需要更長時間）
         };
 
-        console.log('📤 發送請求到:', DEEPSEEK_API_URL);
-        const response = await axios.post(DEEPSEEK_API_URL, requestPayload, requestConfig);
+        console.log('📤 發送請求到:', MOONSHOT_API_URL);
+        const response = await axios.post(MOONSHOT_API_URL, requestPayload, requestConfig);
 
         console.log('✅ API調用成功，狀態碼:', response.status);
         
@@ -528,22 +528,22 @@ app.post('/api/grade-short-answer', async (req, res) => {
 請確保回答是有效的JSON格式。`;
         
         const requestPayload = {
-            model: "deepseek-chat",
+            model: "moonshot-v1-8k",
             messages: [
                 {
                     role: "user",
-                    content: gradingPrompt
+                content: gradingPrompt
                 }
             ],
             max_tokens: 1000,
             temperature: 0.3
         };
         
-        const cleanKey = DEEPSEEK_API_KEY.replace(/[^\w-]/g, '');
-        const finalKey = cleanKey !== DEEPSEEK_API_KEY ? cleanKey : DEEPSEEK_API_KEY;
+        const cleanKey = MOONSHOT_API_KEY.replace(/[^\w-]/g, '');
+        const finalKey = cleanKey !== MOONSHOT_API_KEY ? cleanKey : MOONSHOT_API_KEY;
         const authHeader = `Bearer ${finalKey}`.trim();
         
-        const response = await axios.post(DEEPSEEK_API_URL, requestPayload, {
+        const response = await axios.post(MOONSHOT_API_URL, requestPayload, {
             headers: {
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
@@ -609,11 +609,11 @@ app.get('/health', (req, res) => {
         status: 'healthy',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development',
-        apiKeyConfigured: !!DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'undefined',
-        apiKeyLength: DEEPSEEK_API_KEY ? DEEPSEEK_API_KEY.length : 0,
-        originalApiKeyLength: process.env.DEEPSEEK_API_KEY ? process.env.DEEPSEEK_API_KEY.length : 0,
-        apiKeyStartsWithSk: DEEPSEEK_API_KEY ? DEEPSEEK_API_KEY.startsWith('sk-') : false,
-        apiUrl: DEEPSEEK_API_URL
+        apiKeyConfigured: !!MOONSHOT_API_KEY && MOONSHOT_API_KEY !== 'undefined',
+        apiKeyLength: MOONSHOT_API_KEY ? MOONSHOT_API_KEY.length : 0,
+        originalApiKeyLength: process.env.MOONSHOT_API_KEY ? process.env.MOONSHOT_API_KEY.length : 0,
+        apiKeyStartsWithSk: MOONSHOT_API_KEY ? MOONSHOT_API_KEY.startsWith('sk-') : false,
+        apiUrl: MOONSHOT_API_URL
     });
 });
 
@@ -629,18 +629,18 @@ app.get('/api/status', (req, res) => {
             '/api/leaderboard',
             '/api/stats',
             '/api/study-history',
-            '/api/test-deepseek'
+            '/api/test-moonshot'
         ]
     });
 });
 
-// DeepSeek API測試端點
-app.get('/api/test-deepseek', async (req, res) => {
+// Moonshot AI API測試端點
+app.get('/api/test-moonshot', async (req, res) => {
     try {
-        console.log('🧪 開始測試DeepSeek API...');
+        console.log('🧪 開始測試Moonshot AI API...');
         
         const testPayload = {
-            model: "deepseek-chat",
+            model: "moonshot-v1-8k",
             messages: [
                 {
                     role: "user",
@@ -651,26 +651,26 @@ app.get('/api/test-deepseek', async (req, res) => {
             temperature: 0.1
         };
 
-        console.log('📤 發送測試請求到DeepSeek...');
-        console.log('🔑 使用API Key:', `${DEEPSEEK_API_KEY.substring(0, 10)}...`);
-        console.log('🔍 API Key長度:', DEEPSEEK_API_KEY.length);
-        console.log('🔍 API Key格式:', DEEPSEEK_API_KEY.startsWith('sk-') ? '正確' : '錯誤');
+        console.log('📤 發送測試請求到Moonshot AI...');
+        console.log('🔑 使用API Key:', `${MOONSHOT_API_KEY.substring(0, 10)}...`);
+        console.log('🔍 API Key長度:', MOONSHOT_API_KEY.length);
+        console.log('🔍 API Key格式:', MOONSHOT_API_KEY.startsWith('sk-') ? '正確' : '錯誤');
         
         // 檢查API Key是否有問題字符
-        const cleanKey = DEEPSEEK_API_KEY.replace(/[^\w-]/g, '');
-        const hasInvalidChars = cleanKey !== DEEPSEEK_API_KEY;
+        const cleanKey = MOONSHOT_API_KEY.replace(/[^\w-]/g, '');
+        const hasInvalidChars = cleanKey !== MOONSHOT_API_KEY;
         console.log('🔍 API Key有無效字符:', hasInvalidChars);
         if (hasInvalidChars) {
-            console.log('🔧 原始Key前20字符:', JSON.stringify(DEEPSEEK_API_KEY.substring(0, 20)));
+            console.log('🔧 原始Key前20字符:', JSON.stringify(MOONSHOT_API_KEY.substring(0, 20)));
             console.log('🔧 清理後Key前20字符:', JSON.stringify(cleanKey.substring(0, 20)));
         }
         
         // 使用清理後的Key構建Authorization頭部
-        const finalKey = hasInvalidChars ? cleanKey : DEEPSEEK_API_KEY;
+        const finalKey = hasInvalidChars ? cleanKey : MOONSHOT_API_KEY;
         const authHeader = `Bearer ${finalKey}`.trim();
         console.log('🔍 Authorization頭部長度:', authHeader.length);
         
-        const response = await axios.post(DEEPSEEK_API_URL, testPayload, {
+        const response = await axios.post(MOONSHOT_API_URL, testPayload, {
             headers: {
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
@@ -679,13 +679,13 @@ app.get('/api/test-deepseek', async (req, res) => {
             timeout: 30000
         });
 
-        console.log('✅ DeepSeek API測試成功');
+        console.log('✅ Moonshot AI API測試成功');
         console.log('📥 回應狀態:', response.status);
         console.log('📄 回應內容:', response.data.choices[0].message.content);
 
         res.json({
             success: true,
-            message: 'DeepSeek API測試成功',
+            message: 'Moonshot AI API測試成功',
             response: {
                 status: response.status,
                 content: response.data.choices[0].message.content,
@@ -695,7 +695,7 @@ app.get('/api/test-deepseek', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ DeepSeek API測試失敗:', error.message);
+        console.error('❌ Moonshot AI API測試失敗:', error.message);
         
         let errorDetails = {
             message: error.message,
@@ -720,7 +720,7 @@ app.get('/api/test-deepseek', async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: 'DeepSeek API測試失敗',
+            message: 'Moonshot AI API測試失敗',
             error: errorDetails
         });
     }
