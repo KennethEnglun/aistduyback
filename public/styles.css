@@ -1504,18 +1504,20 @@ body {
 
 /* 預設題目頁面樣式 */
 .presets-card {
-    background: var(--card-bg-color);
-    border-radius: 15px;
+    background: white;
+    border: 3px solid #667eea;
+    border-radius: 20px;
     padding: 30px;
-    box-shadow: var(--shadow-medium);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
     margin-bottom: 30px;
 }
 
 .presets-card h2 {
-    color: var(--primary-color-darker);
+    color: #667eea;
     margin-bottom: 10px;
     text-align: center;
     font-size: 2rem;
+    font-weight: 700;
 }
 
 .presets-card > p {
@@ -1533,25 +1535,27 @@ body {
 }
 
 .preset-item {
-    background: var(--secondary-bg-color);
-    border: 2px solid transparent;
-    border-radius: 12px;
-    padding: 20px;
+    background: white;
+    border: 3px solid #e9ecef;
+    border-radius: 20px;
+    padding: 25px;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
 }
 
 .preset-item:hover {
-    transform: translateY(-3px);
-    border-color: var(--primary-color);
-    box-shadow: var(--shadow-medium);
+    transform: translateY(-5px);
+    border-color: #667eea;
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.15);
 }
 
 .preset-item h4 {
-    color: var(--primary-text-color);
+    color: #333;
     margin: 0 0 15px 0;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1654,13 +1658,14 @@ body {
 }
 
 .modal-content {
-    background: var(--card-bg-color);
-    border-radius: 15px;
-    padding: 30px;
+    background: white;
+    border: 3px solid #667eea;
+    border-radius: 20px;
+    padding: 40px;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
     position: relative;
-    box-shadow: var(--shadow-large);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: modalSlideIn 0.3s ease-out;
 }
 
@@ -1690,10 +1695,11 @@ body {
 }
 
 .modal-content h2 {
-    color: var(--primary-text-color);
-    margin-bottom: 25px;
+    color: #667eea;
+    margin-bottom: 30px;
     text-align: center;
-    font-size: 1.6rem;
+    font-size: 2.4rem;
+    font-weight: 700;
 }
 
 .form-group {
@@ -1702,29 +1708,31 @@ body {
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
-    color: var(--primary-text-color);
-    font-weight: 600;
+    margin-bottom: 12px;
+    color: #333;
+    font-weight: 700;
+    font-size: 1.2rem;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 12px;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--input-bg-color);
-    color: var(--primary-text-color);
-    font-size: 1rem;
-    transition: border-color 0.2s ease;
+    padding: 15px;
+    border: 3px solid #e9ecef;
+    border-radius: 15px;
+    background: white;
+    color: #333;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .login-form {
@@ -1732,8 +1740,10 @@ body {
 }
 
 .login-form input {
-    margin-bottom: 20px;
-    max-width: 300px;
+    margin-bottom: 25px;
+    max-width: 400px;
+    font-size: 1.3rem;
+    padding: 18px;
 }
 
 .message {
