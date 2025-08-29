@@ -173,6 +173,8 @@ function showSection(sectionName) {
         loadLeaderboard();
     } else if (sectionName === 'stats') {
         loadStats();
+    } else if (sectionName === 'presets') {
+        loadPresets();
     }
 }
 
@@ -1289,4 +1291,369 @@ async function copyQuizTopic(quizId) {
 // 初始化歷史功能
 document.addEventListener('DOMContentLoaded', function() {
     setupCharacterCounter();
+    initializePresetFunctionality();
 });
+
+// ============ 預設題目功能 ============
+
+// 全局變數
+let isAdminLoggedIn = false;
+
+// 初始化預設題目功能
+function initializePresetFunctionality() {
+    // 管理員登入模態框事件
+    const adminLoginModal = document.getElementById('admin-login-modal');
+    const addPresetModal = document.getElementById('add-preset-modal');
+    
+    // 關閉模態框事件
+    document.querySelectorAll('.close-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const modal = this.closest('.modal');
+            modal.classList.remove('show');
+        });
+    });
+    
+    // 點擊模態框外部關閉
+    [adminLoginModal, addPresetModal].forEach(modal => {
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                }
+            });
+        }
+    });
+    
+    // 管理員登入按鈕事件
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', handleAdminLogin);
+    }
+    
+    // 新增預設題目按鈕事件
+    const addPresetBtn = document.getElementById('add-preset-btn');
+    if (addPresetBtn) {
+        addPresetBtn.addEventListener('click', showAddPresetModal);
+    }
+    
+    // 管理員登出按鈕事件
+    const adminLogoutBtn = document.getElementById('admin-logout-btn');
+    if (adminLogoutBtn) {
+        adminLogoutBtn.addEventListener('click', handleAdminLogout);
+    }
+    
+    // 預設題目表單提交事件
+    const presetForm = document.getElementById('preset-form');
+    if (presetForm) {
+        presetForm.addEventListener('submit', handlePresetFormSubmit);
+    }
+}
+
+// 顯示管理員登入模態框
+function showAdminLogin() {
+    const modal = document.getElementById('admin-login-modal');
+    if (modal) {
+        // 清空之前的信息
+        document.getElementById('admin-password').value = '';
+        document.getElementById('login-message').textContent = '';
+        document.getElementById('login-message').className = 'message';
+        modal.classList.add('show');
+    }
+}
+
+// 處理管理員登入
+async function handleAdminLogin() {
+    const password = document.getElementById('admin-password').value;
+    const messageDiv = document.getElementById('login-message');
+    
+    if (!password) {
+        showMessage(messageDiv, '請輸入密碼', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            isAdminLoggedIn = true;
+            showMessage(messageDiv, '登入成功！', 'success');
+            
+            // 延遲關閉模態框並更新界面
+            setTimeout(() => {
+                document.getElementById('admin-login-modal').classList.remove('show');
+                updateAdminInterface();
+                
+                // 如果當前在預設題目頁面，重新加載
+                if (document.getElementById('presets').classList.contains('active')) {
+                    loadPresets();
+                }
+            }, 1000);
+        } else {
+            showMessage(messageDiv, data.message || '登入失敗', 'error');
+        }
+    } catch (error) {
+        console.error('管理員登入錯誤:', error);
+        showMessage(messageDiv, '登入時發生錯誤', 'error');
+    }
+}
+
+// 處理管理員登出
+function handleAdminLogout() {
+    isAdminLoggedIn = false;
+    updateAdminInterface();
+    
+    // 如果當前在預設題目頁面，重新加載
+    if (document.getElementById('presets').classList.contains('active')) {
+        loadPresets();
+    }
+    
+    alert('已登出管理員帳戶');
+}
+
+// 更新管理員界面
+function updateAdminInterface() {
+    const adminControls = document.getElementById('admin-controls');
+    if (adminControls) {
+        adminControls.style.display = isAdminLoggedIn ? 'block' : 'none';
+    }
+}
+
+// 載入預設題目
+async function loadPresets() {
+    const presetsList = document.getElementById('presets-list');
+    if (!presetsList) return;
+    
+    presetsList.innerHTML = '<div class="loading-message">正在載入預設題目...</div>';
+    
+    try {
+        const response = await fetch('/api/presets');
+        const presets = await response.json();
+        
+        renderPresets(presets);
+        updateAdminInterface(); // 更新管理員界面
+    } catch (error) {
+        console.error('載入預設題目錯誤:', error);
+        presetsList.innerHTML = '<div class="loading-message">載入失敗，請重試</div>';
+    }
+}
+
+// 渲染預設題目
+function renderPresets(presets) {
+    const presetsList = document.getElementById('presets-list');
+    
+    if (presets.length === 0) {
+        presetsList.innerHTML = '<div class="loading-message">目前沒有預設題目</div>';
+        return;
+    }
+    
+    presetsList.innerHTML = '';
+    
+    presets.forEach(preset => {
+        const presetItem = document.createElement('div');
+        presetItem.className = 'preset-item';
+        presetItem.innerHTML = `
+            <h4>
+                <i class="fas fa-lightbulb"></i>
+                ${preset.topic}
+            </h4>
+            <div class="preset-info">
+                <span class="preset-tag">${preset.grade}</span>
+                <span class="preset-tag">${preset.subject}</span>
+                <span class="preset-tag">${preset.question_type === 'multiple_choice' ? '多項選擇' : '短答題'}</span>
+            </div>
+            ${preset.study_content ? `<div class="preset-content">${preset.study_content.substring(0, 100)}${preset.study_content.length > 100 ? '...' : ''}</div>` : ''}
+            ${isAdminLoggedIn ? `
+                <div class="preset-actions">
+                    <button class="delete-preset-btn" onclick="deletePreset(${preset.id})" title="刪除此預設題目">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            ` : ''}
+        `;
+        
+        // 添加點擊事件（只有非管理員操作時才觸發）
+        presetItem.addEventListener('click', function(e) {
+            if (!e.target.closest('.preset-actions')) {
+                startQuizFromPreset(preset);
+            }
+        });
+        
+        presetsList.appendChild(presetItem);
+    });
+}
+
+// 從預設題目開始測驗
+function startQuizFromPreset(preset) {
+    // 設置測驗參數
+    selectedGrade = preset.grade;
+    selectedSubject = preset.subject;
+    selectedTopic = preset.topic;
+    selectedQuestionType = preset.question_type;
+    
+    if (preset.study_content && preset.study_content.trim()) {
+        selectedMode = 'advanced';
+        studyContent = preset.study_content;
+    } else {
+        selectedMode = 'simple';
+        studyContent = '';
+    }
+    
+    // 切換到主頁並填入表單
+    showSection('home');
+    
+    // 更新界面狀態
+    updateGradeSelection();
+    updateSubjectSelection();
+    updateModeSelection();
+    updateQuestionTypeSelection();
+    updateTopicInput();
+    
+    // 顯示提示
+    alert(`已載入預設題目「${preset.topic}」，請點擊開始測驗按鈕！`);
+}
+
+// 更新年級選擇狀態
+function updateGradeSelection() {
+    const gradeButtons = document.querySelectorAll('.grade-btn');
+    gradeButtons.forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.dataset.grade === selectedGrade) {
+            btn.classList.add('selected');
+        }
+    });
+    document.getElementById('subject-selection').style.display = 'block';
+}
+
+// 更新科目選擇狀態
+function updateSubjectSelection() {
+    const subjectButtons = document.querySelectorAll('.subject-btn');
+    subjectButtons.forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.dataset.subject === selectedSubject) {
+            btn.classList.add('selected');
+        }
+    });
+    document.getElementById('topic-input').style.display = 'block';
+}
+
+// 更新學習模式狀態
+function updateModeSelection() {
+    document.getElementById('simple-mode-btn').classList.remove('active');
+    document.getElementById('advanced-mode-btn').classList.remove('active');
+    document.getElementById(`${selectedMode}-mode-btn`).classList.add('active');
+    
+    document.getElementById('simple-mode').style.display = selectedMode === 'simple' ? 'block' : 'none';
+    document.getElementById('advanced-mode').style.display = selectedMode === 'advanced' ? 'block' : 'none';
+}
+
+// 更新題目類型狀態
+function updateQuestionTypeSelection() {
+    document.getElementById('multiple-choice-btn').classList.remove('active');
+    document.getElementById('short-answer-btn').classList.remove('active');
+    document.getElementById(`${selectedQuestionType.replace('_', '-')}-btn`).classList.add('active');
+}
+
+// 更新主題輸入
+function updateTopicInput() {
+    if (selectedMode === 'simple') {
+        document.getElementById('topic').value = selectedTopic;
+    } else {
+        document.getElementById('topic-advanced').value = selectedTopic;
+        document.getElementById('study-content').value = studyContent;
+    }
+    updateSelectionSummary();
+}
+
+// 顯示新增預設題目模態框
+function showAddPresetModal() {
+    const modal = document.getElementById('add-preset-modal');
+    if (modal) {
+        // 清空表單
+        document.getElementById('preset-form').reset();
+        document.getElementById('preset-message').textContent = '';
+        document.getElementById('preset-message').className = 'message';
+        modal.classList.add('show');
+    }
+}
+
+// 處理預設題目表單提交
+async function handlePresetFormSubmit(e) {
+    e.preventDefault();
+    
+    const messageDiv = document.getElementById('preset-message');
+    const formData = {
+        grade: document.getElementById('preset-grade').value,
+        subject: document.getElementById('preset-subject').value,
+        topic: document.getElementById('preset-topic').value,
+        question_type: document.getElementById('preset-question-type').value,
+        study_content: document.getElementById('preset-content').value
+    };
+    
+    // 驗證必填欄位
+    if (!formData.grade || !formData.subject || !formData.topic || !formData.question_type) {
+        showMessage(messageDiv, '請填寫所有必填欄位', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/presets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showMessage(messageDiv, '預設題目新增成功！', 'success');
+            
+            // 延遲關閉模態框並重新載入
+            setTimeout(() => {
+                document.getElementById('add-preset-modal').classList.remove('show');
+                loadPresets();
+            }, 1500);
+        } else {
+            showMessage(messageDiv, data.error || '新增失敗', 'error');
+        }
+    } catch (error) {
+        console.error('新增預設題目錯誤:', error);
+        showMessage(messageDiv, '新增時發生錯誤', 'error');
+    }
+}
+
+// 刪除預設題目
+async function deletePreset(id) {
+    if (!confirm('確定要刪除這個預設題目嗎？')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/presets/${id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+            alert('預設題目已刪除');
+            loadPresets(); // 重新載入列表
+        } else {
+            const data = await response.json();
+            alert(`刪除失敗: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('刪除預設題目錯誤:', error);
+        alert('刪除時發生錯誤');
+    }
+}
+
+// 顯示消息的輔助函數
+function showMessage(element, message, type) {
+    element.textContent = message;
+    element.className = `message ${type}`;
+}

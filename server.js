@@ -90,7 +90,17 @@ db.serialize(() => {
             console.error('添加question_type欄位錯誤:', err);
         }
     });
-});
+    
+    // 創建預設題目表
+    db.run(`CREATE TABLE IF NOT EXISTS presets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        grade TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        topic TEXT NOT NULL,
+        study_content TEXT,
+        question_type TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
 
 // 年級和科目配置
 const GRADES = ['一年級', '二年級', '三年級', '四年級', '五年級', '六年級'];
@@ -568,6 +578,65 @@ app.post('/api/grade-short-answer', async (req, res) => {
     } catch (error) {
         console.error('短答題評分錯誤:', error.message);
         res.status(500).json({ error: '評分失敗：' + error.message });
+    }
+});
+
+// 獲取所有預設題目API
+app.get('/api/presets', (req, res) => {
+    db.all('SELECT * FROM presets ORDER BY timestamp DESC', [], (err, rows) => {
+        if (err) {
+            console.error('獲取預設題目錯誤:', err);
+            return res.status(500).json({ error: '獲取預設題目失敗' });
+        }
+        res.json(rows);
+    });
+});
+
+// 創建預設題目API
+app.post('/api/presets', (req, res) => {
+    const { grade, subject, topic, study_content, question_type } = req.body;
+    
+    if (!grade || !subject || !topic || !question_type) {
+        return res.status(400).json({ error: '缺少必要欄位' });
+    }
+    
+    db.run(
+        'INSERT INTO presets (grade, subject, topic, study_content, question_type) VALUES (?, ?, ?, ?, ?)',
+        [grade, subject, topic, study_content || '', question_type],
+        function(err) {
+            if (err) {
+                console.error('創建預設題目錯誤:', err);
+                return res.status(500).json({ error: '創建預設題目失敗' });
+            }
+            res.json({ success: true, id: this.lastID });
+        }
+    );
+});
+
+// 刪除預設題目API
+app.delete('/api/presets/:id', (req, res) => {
+    const { id } = req.params;
+    db.run('DELETE FROM presets WHERE id = ?', [id], function(err) {
+        if (err) {
+            console.error('刪除預設題目錯誤:', err);
+            return res.status(500).json({ error: '刪除預設題目失敗' });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: '找不到要刪除的題目' });
+        }
+        res.json({ success: true });
+    });
+});
+
+// 簡化版管理員登入API
+app.post('/api/admin/login', (req, res) => {
+    const { password } = req.body;
+    const ADMIN_PASSWORD = '512524'; // 管理員密碼
+    
+    if (password === ADMIN_PASSWORD) {
+        res.json({ success: true, message: '登入成功' });
+    } else {
+        res.status(401).json({ success: false, message: '密碼錯誤' });
     }
 });
 

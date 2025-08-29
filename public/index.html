@@ -19,6 +19,8 @@
                 <button class="nav-btn" onclick="showSection('home')">首頁</button>
                 <button class="nav-btn" onclick="showSection('leaderboard')">排行榜</button>
                 <button class="nav-btn" onclick="showSection('stats')">統計</button>
+                <button class="nav-btn" onclick="showSection('presets')">老師預設題目</button>
+                <button class="nav-btn" onclick="showAdminLogin()">管理員登入</button>
             </nav>
         </div>
     </header>
@@ -351,7 +353,106 @@
                 </div>
             </div>
         </section>
+
+        <!-- 老師預設題目部分 -->
+        <section id="presets" class="section">
+            <div class="container">
+                <div class="presets-card">
+                    <h2><i class="fas fa-chalkboard-teacher"></i> 老師預設題目</h2>
+                    <p>點擊以下課題即可開始AI問答。</p>
+                    
+                    <div id="presets-list" class="presets-grid">
+                        <!-- 預設題目將動態載入 -->
+                        <div class="loading-message">正在載入預設題目...</div>
+                    </div>
+                    
+                    <!-- 管理員控制區 -->
+                    <div id="admin-controls" class="admin-section" style="display: none;">
+                        <h3><i class="fas fa-cog"></i> 管理預設題目</h3>
+                        <button id="add-preset-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> 新增預設題目
+                        </button>
+                        <button id="admin-logout-btn" class="btn btn-secondary">
+                            <i class="fas fa-sign-out-alt"></i> 管理員登出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
+
+    <!-- 管理員登入模態框 -->
+    <div id="admin-login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2><i class="fas fa-key"></i> 管理員登入</h2>
+            <div class="login-form">
+                <input type="password" id="admin-password" placeholder="請輸入管理員密碼" maxlength="20">
+                <button id="login-btn" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> 登入
+                </button>
+            </div>
+            <div id="login-message" class="message"></div>
+        </div>
+    </div>
+
+    <!-- 新增預設題目模態框 -->
+    <div id="add-preset-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2><i class="fas fa-plus"></i> 新增預設題目</h2>
+            <form id="preset-form">
+                <div class="form-group">
+                    <label for="preset-grade">年級:</label>
+                    <select id="preset-grade" required>
+                        <option value="">請選擇年級</option>
+                        <option value="一年級">一年級</option>
+                        <option value="二年級">二年級</option>
+                        <option value="三年級">三年級</option>
+                        <option value="四年級">四年級</option>
+                        <option value="五年級">五年級</option>
+                        <option value="六年級">六年級</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="preset-subject">科目:</label>
+                    <select id="preset-subject" required>
+                        <option value="">請選擇科目</option>
+                        <option value="中文">中文</option>
+                        <option value="英文">英文</option>
+                        <option value="數學">數學</option>
+                        <option value="科學">科學</option>
+                        <option value="人文">人文</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="preset-topic">學習主題:</label>
+                    <input type="text" id="preset-topic" placeholder="輸入學習主題" required maxlength="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="preset-question-type">題目類型:</label>
+                    <select id="preset-question-type" required>
+                        <option value="">請選擇題目類型</option>
+                        <option value="multiple_choice">多項選擇題</option>
+                        <option value="short_answer">短答題</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="preset-content">詳細學習內容 (可選):</label>
+                    <textarea id="preset-content" rows="4" placeholder="提供詳細學習內容以生成更精確的題目" maxlength="2000"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 保存預設題目
+                </button>
+            </form>
+            <div id="preset-message" class="message"></div>
+        </div>
+    </div>
 
     <!-- 載入遮罩 -->
     <div class="loading-overlay" id="loading-overlay">
