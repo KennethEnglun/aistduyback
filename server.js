@@ -101,6 +101,7 @@ db.serialize(() => {
         question_type TEXT NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+});
 
 // 年級和科目配置
 const GRADES = ['一年級', '二年級', '三年級', '四年級', '五年級', '六年級'];
