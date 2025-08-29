@@ -193,23 +193,24 @@ app.post('/api/generate-questions', async (req, res) => {
             saveStudyContent(grade, subject, topic, studyContent.trim());
             
             // 進階功能：基於詳細學習內容生成問題
-            prompt = `請仔細閱讀以下學習內容，為${grade}學生生成10道${subject}科目的${questionTypeText}。
+            prompt = `請仔細閱讀以下學習內容，為${grade}學生生成15道${subject}科目的${questionTypeText}。
 
 學習內容：
 ${studyContent}
 
 要求：
-1. 問題必須緊密圍繞上述學習內容出題
+1. 問題必須緊密圍繞上述學習內容出題，確保涵蓋學習內容的所有重要知識點
 2. 難度：${difficultyLevel}
 3. ${subjectScope}
+4. 題目應該測試學習內容的不同層面，包括基本概念、應用理解、細節記憶等
 ${isShortAnswer ? 
-`4. 每題要求學生用簡短文字回答
-5. 答案應該簡潔明確，適合${grade}學生表達
-6. 問題要測試學生對學習內容的理解和記憶
-7. 語言要簡單易懂，適合${grade}學生
-8. 避免過於抽象或複雜的概念
-9. ${languageRequirement}
-10. 請以JSON格式回答，格式如下：
+`5. 每題要求學生用簡短文字回答
+6. 答案應該簡潔明確，適合${grade}學生表達
+7. 問題要測試學生對學習內容的理解和記憶
+8. 語言要簡單易懂，適合${grade}學生
+9. 避免過於抽象或複雜的概念
+10. ${languageRequirement}
+11. 請以JSON格式回答，格式如下：
 
 {
   "questions": [
@@ -220,12 +221,12 @@ ${isShortAnswer ?
     }
   ]
 }` :
-`4. 每題包含4個選項（A、B、C、D）
-5. 只有一個正確答案
-6. 問題要測試學生對學習內容的理解和記憶
-7. 語言要簡單易懂，適合${grade}學生
-8. 避免過於抽象或複雜的概念
-9. ${languageRequirement}
+`5. 每題包含4個選項（A、B、C、D）
+6. 只有一個正確答案
+7. 問題要測試學生對學習內容的理解和記憶
+8. 語言要簡單易懂，適合${grade}學生
+9. 避免過於抽象或複雜的概念
+10. ${languageRequirement}
 11. 請以JSON格式回答，格式如下：
 
 {

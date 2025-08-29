@@ -321,6 +321,9 @@ async function startQuiz() {
             throw new Error('未能生成有效問題');
         }
 
+        // 隨機打亂題目順序
+        questions = shuffleArray(questions);
+
         // 初始化測驗狀態
         currentQuestionIndex = 0;
         userAnswers = new Array(questions.length).fill(null);
@@ -1658,6 +1661,16 @@ async function deleteLeaderboardRecord(id) {
         console.error('刪除排行榜記錄錯誤:', error);
         alert('刪除時發生錯誤');
     }
+}
+
+// 隨機打亂數組順序的函數
+function shuffleArray(array) {
+    const shuffled = [...array]; // 創建副本避免修改原數組
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
 }
 
 // 顯示消息的輔助函數
