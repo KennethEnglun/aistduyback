@@ -179,6 +179,11 @@ app.post('/api/generate-questions', async (req, res) => {
         const difficultyLevel = getDifficultyPrompt(grade);
         const subjectScope = getSubjectScope(subject);
         
+        // 根據科目設定語言要求
+        const languageRequirement = subject === '英文' 
+            ? 'All questions, options, and content must be in English. Use English only.'
+            : '必須使用繁體中文（Traditional Chinese）出題，不可使用簡體中文。所有題目、選項和內容都必須是繁體中文';
+        
         let prompt;
         const isShortAnswer = questionType === 'short_answer';
         const questionTypeText = isShortAnswer ? '短答題' : '多項選擇題';
@@ -203,9 +208,8 @@ ${isShortAnswer ?
 6. 問題要測試學生對學習內容的理解和記憶
 7. 語言要簡單易懂，適合${grade}學生
 8. 避免過於抽象或複雜的概念
-9. 必須使用繁體中文（Traditional Chinese）出題，不可使用簡體中文
-10. 所有題目、答案和內容都必須是繁體中文
-11. 請以JSON格式回答，格式如下：
+9. ${languageRequirement}
+10. 請以JSON格式回答，格式如下：
 
 {
   "questions": [
@@ -221,8 +225,7 @@ ${isShortAnswer ?
 6. 問題要測試學生對學習內容的理解和記憶
 7. 語言要簡單易懂，適合${grade}學生
 8. 避免過於抽象或複雜的概念
-9. 必須使用繁體中文（Traditional Chinese）出題，不可使用簡體中文
-10. 所有題目、選項和內容都必須是繁體中文
+9. ${languageRequirement}
 11. 請以JSON格式回答，格式如下：
 
 {
@@ -256,9 +259,8 @@ ${isShortAnswer ?
 6. 語言要簡單易懂，適合${grade}學生理解
 7. 避免過於複雜的計算或抽象概念
 8. 使用日常生活中的例子讓學生容易理解
-9. 必須使用繁體中文（Traditional Chinese）出題，不可使用簡體中文
-10. 所有題目、答案和內容都必須是繁體中文
-11. 請以JSON格式回答，格式如下：
+9. ${languageRequirement}
+10. 請以JSON格式回答，格式如下：
 
 {
   "questions": [
@@ -275,9 +277,8 @@ ${isShortAnswer ?
 6. 語言要簡單易懂，適合${grade}學生理解
 7. 避免過於複雜的計算或抽象概念
 8. 使用日常生活中的例子讓學生容易理解
-9. 必須使用繁體中文（Traditional Chinese）出題，不可使用簡體中文
-10. 所有題目、選項和內容都必須是繁體中文
-11. 請以JSON格式回答，格式如下：
+9. ${languageRequirement}
+10. 請以JSON格式回答，格式如下：
 
 {
   "questions": [
@@ -471,6 +472,27 @@ app.get('/api/leaderboard', (req, res) => {
     });
 });
 
+// 刪除排行榜記錄API
+app.delete('/api/leaderboard/:id', (req, res) => {
+    const { id } = req.params;
+    
+    console.log('🗑️ 刪除排行榜記錄請求:', { id });
+    
+    db.run('DELETE FROM scores WHERE id = ?', [id], function(err) {
+        if (err) {
+            console.error('❌ 刪除排行榜記錄錯誤:', err);
+            return res.status(500).json({ error: '刪除記錄失敗' });
+        }
+        
+        if (this.changes === 0) {
+            return res.status(404).json({ error: '找不到該記錄' });
+        }
+        
+        console.log('✅ 排行榜記錄刪除成功, ID:', id);
+        res.json({ success: true, message: '記錄已刪除' });
+    });
+});
+
 // 獲取問答歷史詳情API
 app.get('/api/quiz-history/:id', (req, res) => {
     const { id } = req.params;
@@ -641,37 +663,7 @@ app.post('/api/admin/login', (req, res) => {
     }
 });
 
-// 獲取統計數據API
-app.get('/api/stats', (req, res) => {
-    const { grade, subject } = req.query;
-    
-    let query = 'SELECT AVG(score * 100.0 / total_questions) as avg_score, COUNT(*) as total_attempts FROM scores';
-    let params = [];
-    
-    if (grade || subject) {
-        query += ' WHERE';
-        if (grade) {
-            query += ' grade = ?';
-            params.push(grade);
-        }
-        if (subject) {
-            if (grade) query += ' AND';
-            query += ' subject = ?';
-            params.push(subject);
-        }
-    }
-    
-    db.get(query, params, (err, row) => {
-        if (err) {
-            console.error('獲取統計錯誤:', err);
-            return res.status(500).json({ error: '獲取統計失敗' });
-        }
-        res.json({
-            averageScore: Math.round(row.avg_score || 0),
-            totalAttempts: row.total_attempts || 0
-        });
-    });
-});
+
 
 // 健康檢查端點
 app.get('/health', (req, res) => {

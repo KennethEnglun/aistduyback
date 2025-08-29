@@ -1361,6 +1361,16 @@ body {
     box-shadow: 0 3px 10px rgba(255, 193, 7, 0.3);
 }
 
+.action-btn-small.delete-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.action-btn-small.delete-btn:hover {
+    background: #c82333;
+    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+}
+
 .review-notice {
     background: #fff3cd;
     color: #856404;

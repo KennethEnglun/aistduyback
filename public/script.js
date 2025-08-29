@@ -50,7 +50,6 @@ function initializeApp() {
     loadUserNameFromCookie();
     showSection('home');
     loadLeaderboard();
-    loadStats();
 }
 
 // 從Cookie載入用戶名
@@ -171,8 +170,6 @@ function showSection(sectionName) {
     // 特殊處理
     if (sectionName === 'leaderboard') {
         loadLeaderboard();
-    } else if (sectionName === 'stats') {
-        loadStats();
     } else if (sectionName === 'presets') {
         loadPresets();
     }
@@ -1000,6 +997,13 @@ function displayLeaderboard(data) {
             html += `</button>`;
         }
         
+        // 管理員可以刪除排行榜記錄
+        if (isAdminLoggedIn) {
+            html += `<button class="action-btn-small delete-btn" onclick="deleteLeaderboardRecord(${item.id})" title="刪除記錄">`;
+            html += `<i class="fas fa-trash"></i> 刪除`;
+            html += `</button>`;
+        }
+        
         html += `</div>`;
         html += `</div>`;
     });
@@ -1007,28 +1011,7 @@ function displayLeaderboard(data) {
     tableDiv.innerHTML = html;
 }
 
-// 載入統計數據
-async function loadStats() {
-    try {
-        const response = await fetch('/api/stats');
-        if (!response.ok) {
-            throw new Error('載入統計失敗');
-        }
 
-        const data = await response.json();
-        displayStats(data);
-    } catch (error) {
-        console.error('載入統計錯誤:', error);
-        document.getElementById('total-attempts').textContent = '0';
-        document.getElementById('average-score').textContent = '0%';
-    }
-}
-
-// 顯示統計數據
-function displayStats(data) {
-    document.getElementById('total-attempts').textContent = data.totalAttempts;
-    document.getElementById('average-score').textContent = `${data.averageScore}%`;
-}
 
 // 顯示/隱藏載入畫面
 function showLoading(show) {
@@ -1648,6 +1631,31 @@ async function deletePreset(id) {
         }
     } catch (error) {
         console.error('刪除預設題目錯誤:', error);
+        alert('刪除時發生錯誤');
+    }
+}
+
+// 刪除排行榜記錄
+async function deleteLeaderboardRecord(id) {
+    if (!confirm('確定要刪除這個排行榜記錄嗎？')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/leaderboard/${id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+            loadLeaderboard(); // 重新載入排行榜
+            alert('記錄已成功刪除');
+        } else {
+            const data = await response.json();
+            alert(`刪除失敗: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('刪除排行榜記錄錯誤:', error);
         alert('刪除時發生錯誤');
     }
 }
