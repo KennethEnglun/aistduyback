@@ -659,9 +659,9 @@ function showAnswerExplanation() {
     
     let isCorrect;
     if (isShortAnswer) {
-        // 短答題使用AI評分結果
+        // 短答題使用AI評分結果，低於90分視為答錯
         if (currentQuestion.aiGrading) {
-            isCorrect = currentQuestion.aiGrading.isCorrect;
+            isCorrect = currentQuestion.aiGrading.isCorrect && currentQuestion.aiGrading.score >= 90;
         } else {
             // 如果沒有AI評分結果，使用簡單比較作為備用
             isCorrect = userAnswer && userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
@@ -746,9 +746,9 @@ function calculateScore() {
         
         let isCorrect;
         if (isShortAnswer) {
-            // 短答題使用AI評分結果
+            // 短答題使用AI評分結果，低於90分視為答錯
             if (question.aiGrading) {
-                isCorrect = question.aiGrading.isCorrect;
+                isCorrect = question.aiGrading.isCorrect && question.aiGrading.score >= 90;
             } else {
                 // 如果沒有AI評分結果，使用簡單比較作為備用
                 isCorrect = userAnswer && userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
